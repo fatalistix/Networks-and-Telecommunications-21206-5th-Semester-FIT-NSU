@@ -16,7 +16,7 @@ import (
 // return container.NewGridWithColumns(15)
 // }
 
-func newStartWindowViewFirstRowColumnGrid(validator func(string) error, onValidationSuccess, onValidationError func()) *fyne.Container {
+func newStartWindowViewFirstRowColumnGrid(changable *string, validator func(string) error, onValidationSuccess, onValidationError func()) *fyne.Container {
 	firstText := canvas.NewText("224", color.NRGBA{R: 0, B: 150, G: 150, A: 255})
 	firstText.TextSize = 50.
 	firstText.Alignment = fyne.TextAlignCenter
@@ -56,13 +56,22 @@ func newStartWindowViewFirstRowColumnGrid(validator func(string) error, onValida
 	return container.NewGridWithColumns(7, firstText, secondText, thirdText, forthText, fifthText, sixthText, seventhEntry)
 }
 
+func newStartWindowViewSecondRowCenter() *fyne.Container {
+	orText := canvas.NewText("OR", color.NRGBA{R: 0, B: 150, G: 150, A: 255})
+	orText.TextSize = 50.
+	orText.Alignment = fyne.TextAlignCenter
+	return container.NewCenter(orText)
+}
+
 func NewStartWindowView() *fyne.Container {
+	ipv4Str := ""
 
 	watch4Button := widget.NewButton("Watch IPv4", func() {})
 	watch4Button.Disable()
 	watch6Button := widget.NewButton("Watch IPv6", func() {})
+	watch6Button.Disable()
 
-	firstRowContainer := newStartWindowViewFirstRowColumnGrid(func(s string) error {
+	firstRowContainer := newStartWindowViewFirstRowColumnGrid(&ipv4Str, func(s string) error {
 		if s == "123" {
 			return nil
 		}
@@ -72,7 +81,7 @@ func NewStartWindowView() *fyne.Container {
 	}, func() {
 		watch4Button.Disable()
 	})
-	secondRowContainer := container.NewStack()
+	secondRowContainer := newStartWindowViewSecondRowCenter()
 	thirdRowContainer := container.NewGridWithColumns(7)
 	forthRowContainer := container.NewGridWithColumns(2, watch4Button, watch6Button)
 	mainGrid := container.NewGridWithRows(4, firstRowContainer, secondRowContainer, thirdRowContainer, forthRowContainer)
