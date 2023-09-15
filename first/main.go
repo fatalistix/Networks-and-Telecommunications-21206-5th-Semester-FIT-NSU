@@ -2,14 +2,15 @@ package main
 
 import (
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/widget"
+
+	"networks/first/controller"
 )
 
 func main() {
 	application := app.New()
 	window := application.NewWindow("Hello, World")
-
-	window.SetContent(widget.NewLabel("Hello, World!!!!!!!"))
+	cntrlr := controller.NewController(window)
+	cntrlr.Init()
 	window.ShowAndRun()
 }
 
