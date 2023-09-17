@@ -1,12 +1,10 @@
 package view
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
 	"networks/first/model"
@@ -23,17 +21,20 @@ func newStartWindowViewFirstRowColumnGrid(
 	cont := container.NewGridWithColumns(7)
 
 	for _, str := range staticStrings {
-		text := canvas.NewText(str, color.NRGBA{R: 0, B: 150, G: 150, A: 255})
-		text.TextSize = 50.
-		text.Alignment = fyne.TextAlignCenter
-		cont.Add(text)
+		label := widget.NewLabelWithStyle(
+			str,
+			fyne.TextAlignCenter,
+			fyne.TextStyle{Bold: true},
+		)
+		cont.Add(container.NewCenter(label))
 	}
 
 	changableStr := ""
-	seventhEntry := widget.NewEntryWithData(binding.BindString(&changableStr))
-	seventhEntry.Validator = entryValidator
-	seventhEntry.OnChanged = func(s string) {
-		err := seventhEntry.Validate()
+	entry := widget.NewEntryWithData(binding.BindString(&changableStr))
+	entry.MultiLine = false
+	entry.Validator = entryValidator
+	entry.OnChanged = func(s string) {
+		err := entry.Validate()
 		if err != nil {
 			onValidationError()
 		} else {
@@ -41,16 +42,18 @@ func newStartWindowViewFirstRowColumnGrid(
 		}
 	}
 
-	cont.Add(seventhEntry)
+	cont.Add(container.NewCenter(container.NewBorder(entry, nil, nil, nil)))
 
 	return cont
 }
 
 func newStartWindowViewSecondRowCenter() *fyne.Container {
-	orText := canvas.NewText("OR", color.NRGBA{R: 0, B: 150, G: 150, A: 255})
-	orText.TextSize = 50.
-	orText.Alignment = fyne.TextAlignCenter
-	return container.NewCenter(orText)
+	orLabel := widget.NewLabelWithStyle(
+		"OR",
+		fyne.TextAlignCenter,
+		fyne.TextStyle{Bold: true},
+	)
+	return container.NewCenter(orLabel)
 }
 
 func newStartWindowViewThirdRowColumnGrid(
@@ -62,19 +65,23 @@ func newStartWindowViewThirdRowColumnGrid(
 	staticStrings := []string{"FF02", ":", "0", ":", "0", ":", "0", ":", "0", ":", "1", ":"}
 
 	for _, str := range staticStrings {
-		text := canvas.NewText(str, color.NRGBA{R: 0, B: 150, G: 150, A: 255})
-		text.TextSize = 30.
-		text.Alignment = fyne.TextAlignCenter
-		cont.Add(text)
+		label := widget.NewLabelWithStyle(
+			str,
+			fyne.TextAlignCenter,
+			fyne.TextStyle{Bold: true},
+		)
+		cont.Add(container.NewCenter(label))
 	}
 
 	firstStr := ""
 	secondStr := ""
 
 	firstEntry := widget.NewEntryWithData(binding.BindString(&firstStr))
+	firstEntry.MultiLine = false
 	firstEntry.Validator = firstEntryValidator
 
 	secondEntry := widget.NewEntryWithData(binding.BindString(&secondStr))
+	secondEntry.MultiLine = false
 	secondEntry.Validator = secondEntryValidator
 
 	firstEntry.OnChanged = func(s string) {
@@ -93,18 +100,23 @@ func newStartWindowViewThirdRowColumnGrid(
 		}
 	}
 
-	text := canvas.NewText(":", color.NRGBA{R: 0, B: 150, G: 150, A: 255})
-	text.TextSize = 30.
-	text.Alignment = fyne.TextAlignCenter
+	label := widget.NewLabelWithStyle(
+		":",
+		fyne.TextAlignCenter,
+		fyne.TextStyle{Bold: true, Monospace: true},
+	)
 
-	cont.Add(firstEntry)
-	cont.Add(text)
-	cont.Add(secondEntry)
+	cont.Add(container.NewPadded(firstEntry))
+	cont.Add(container.NewCenter(label))
+	cont.Add(container.NewPadded(secondEntry))
 
 	return cont
 }
 
-func NewStartWindowView(onIPv4ButtonPressed, onIPv6ButtonPressed func(ip string)) *fyne.Container {
+func NewStartWindowView(
+	onIPv4ButtonPressed, onIPv6ButtonPressed func(ip string),
+	onSettingsButtonPressed func(),
+) *fyne.Container {
 	ip4str := ""
 	ip16str := ""
 
@@ -114,10 +126,13 @@ func NewStartWindowView(onIPv4ButtonPressed, onIPv6ButtonPressed func(ip string)
 	watch4Button := widget.NewButton("Watch IPv4", func() {
 		onIPv4ButtonPressed(ip4str)
 	})
+	watch4Button.Importance = widget.HighImportance
 	watch4Button.Disable()
+
 	watch6Button := widget.NewButton("Watch IPv6", func() {
 		onIPv6ButtonPressed(ip16str)
 	})
+	watch6Button.Importance = widget.HighImportance
 	watch6Button.Disable()
 
 	firstRowContainer := newStartWindowViewFirstRowColumnGrid(func(s string) error {
@@ -140,7 +155,15 @@ func NewStartWindowView(onIPv4ButtonPressed, onIPv6ButtonPressed func(ip string)
 		watch6Button.Disable()
 	})
 
-	forthRowContainer := container.NewGridWithColumns(2, watch4Button, watch6Button)
+	settingsButton := widget.NewButton("Settings", onSettingsButtonPressed)
+
+	forthRowContainer := container.NewGridWithColumns(
+		4,
+		settingsButton,
+		layout.NewSpacer(),
+		watch4Button,
+		watch6Button,
+	)
 	mainGrid := container.NewGridWithRows(
 		4,
 		firstRowContainer,
