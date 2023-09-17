@@ -12,7 +12,7 @@ import (
 	"networks/first/model/ip4"
 )
 
-func newStartWindowViewFirstRowColumnGrid(
+func newStartWindowViewSecondRowColumnGrid(
 	entryValidator fyne.StringValidator,
 	onValidationSuccess func(string),
 	onValidationError func(),
@@ -47,7 +47,7 @@ func newStartWindowViewFirstRowColumnGrid(
 	return cont
 }
 
-func newStartWindowViewSecondRowCenter() *fyne.Container {
+func newStartWindowViewThirdRowCenter() *fyne.Container {
 	orLabel := widget.NewLabelWithStyle(
 		"OR",
 		fyne.TextAlignCenter,
@@ -56,7 +56,7 @@ func newStartWindowViewSecondRowCenter() *fyne.Container {
 	return container.NewCenter(orLabel)
 }
 
-func newStartWindowViewThirdRowColumnGrid(
+func newStartWindowViewFourthRowColumnGrid(
 	firstEntryValidator, secondEntryValidator fyne.StringValidator,
 	onValidationSuccess func(string),
 	onValidationError func(),
@@ -114,28 +114,29 @@ func newStartWindowViewThirdRowColumnGrid(
 }
 
 func NewStartWindowView(
-	onIPv4ButtonPressed, onIPv6ButtonPressed func(ip string),
+	onIPv4ButtonPressed, onIPv6ButtonPressed func(ip, id string),
 	onSettingsButtonPressed func(),
 ) *fyne.Container {
 	ip4str := ""
 	ip16str := ""
+	id := ""
 
 	var ipv4mcv model.LocalMulticastValidator = ip4.MakeIP4LocalMulticastValidator()
 	var ipv6mcv model.LocalMulticastValidator = ip16.MakeIP16LocalMulticastValidator()
 
 	watch4Button := widget.NewButton("Watch IPv4", func() {
-		onIPv4ButtonPressed(ip4str)
+		onIPv4ButtonPressed(ip4str, id)
 	})
 	watch4Button.Importance = widget.HighImportance
 	watch4Button.Disable()
 
 	watch6Button := widget.NewButton("Watch IPv6", func() {
-		onIPv6ButtonPressed(ip16str)
+		onIPv6ButtonPressed(ip16str, id)
 	})
 	watch6Button.Importance = widget.HighImportance
 	watch6Button.Disable()
 
-	firstRowContainer := newStartWindowViewFirstRowColumnGrid(func(s string) error {
+	firstRowContainer := newStartWindowViewSecondRowColumnGrid(func(s string) error {
 		return ipv4mcv.Validate(ip4.IP4LocalMulticastPrefix + s)
 	}, func(s string) {
 		ip4str = s
@@ -143,8 +144,8 @@ func NewStartWindowView(
 	}, func() {
 		watch4Button.Disable()
 	})
-	secondRowContainer := newStartWindowViewSecondRowCenter()
-	thirdRowContainer := newStartWindowViewThirdRowColumnGrid(func(s string) error {
+	secondRowContainer := newStartWindowViewThirdRowCenter()
+	thirdRowContainer := newStartWindowViewFourthRowColumnGrid(func(s string) error {
 		return ipv6mcv.Validate(ip16.IP16LocalMulticastPrefix + s + ":00ff")
 	}, func(s string) error {
 		return ipv6mcv.Validate(ip16.IP16LocalMulticastPrefix + "ff01:" + s)
@@ -164,8 +165,16 @@ func NewStartWindowView(
 		watch4Button,
 		watch6Button,
 	)
+
+	idEntry := widget.NewEntry()
+	idEntry.PlaceHolder = "Enter your nickname..."
+	idEntry.OnChanged = func(s string) {
+		id = s
+	}
+
 	mainGrid := container.NewGridWithRows(
-		4,
+		5,
+		idEntry,
 		firstRowContainer,
 		secondRowContainer,
 		thirdRowContainer,
