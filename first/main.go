@@ -8,7 +8,7 @@ import (
 
 func main() {
 	application := app.New()
-	window := application.NewWindow("Hello, World")
+	window := application.NewWindow("Multicaster")
 	cntrlr := controller.NewController(window)
 	cntrlr.Init()
 	window.ShowAndRun()
