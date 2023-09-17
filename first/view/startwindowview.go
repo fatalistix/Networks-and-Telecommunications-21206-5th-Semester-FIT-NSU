@@ -106,9 +106,9 @@ func newStartWindowViewThirdRowColumnGrid(
 		fyne.TextStyle{Bold: true, Monospace: true},
 	)
 
-	cont.Add(container.NewPadded(firstEntry))
+	cont.Add(container.NewCenter(firstEntry))
 	cont.Add(container.NewCenter(label))
-	cont.Add(container.NewPadded(secondEntry))
+	cont.Add(container.NewCenter(secondEntry))
 
 	return cont
 }
