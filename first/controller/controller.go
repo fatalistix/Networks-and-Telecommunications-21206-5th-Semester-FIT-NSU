@@ -9,9 +9,10 @@ import (
 )
 
 type Controller struct {
-	startWindow *fyne.Container
-	listWindow  *fyne.Container
-	window      fyne.Window
+	startView       *fyne.Container
+	listViewHandler *view.ListWindowViewHandler
+	settingsView    *fyne.Container
+	window          fyne.Window
 }
 
 func NewController(window fyne.Window) *Controller {
@@ -21,10 +22,23 @@ func NewController(window fyne.Window) *Controller {
 }
 
 func (s *Controller) Init() {
-	s.startWindow = view.NewStartWindowView(func(ip string) {
+	s.settingsView = view.NewSettingsView(s.window, func() {
+		s.window.SetContent(s.startView)
+	})
+
+	s.startView = view.NewStartWindowView(func(ip string) {
+		s.window.SetContent(s.listViewHandler.Container())
 		fmt.Println(ip)
 	}, func(ip string) {
 		fmt.Println(ip)
+	}, func() {
+		s.window.SetContent(s.settingsView)
 	})
-	s.window.SetContent(s.startWindow)
+
+	s.listViewHandler = view.NewListWindowView("MOCK", "MOCK", 69, func() {
+		s.window.SetContent(s.startView)
+	})
+
+	s.window.SetContent(s.startView)
+	// s.window.SetContent(view.NewListWindowView())
 }
