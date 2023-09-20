@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -77,7 +78,7 @@ func (s *B6FPacket) ToBytes() []byte {
 		}
 	case Report:
 		{
-			byteSlice := make([]byte, 1+2+len(s.id))
+			byteSlice := make([]byte, 0)
 			buffer := bytes.NewBuffer(byteSlice)
 			_ = buffer.WriteByte(s.messageType)
 			_ = binary.Write(buffer, binary.BigEndian, int16(len(s.id)))
