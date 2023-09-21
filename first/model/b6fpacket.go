@@ -8,9 +8,13 @@ import (
 )
 
 const (
-	Report byte = 1
-	Leave  byte = 2
+	B6F_MT_Report byte = 1
+	B6F_MT_Leave  byte = 2
 )
+
+const B6FPort int = 6969
+const B6FSendingTimeoutMs int = 3 * 1000
+const B6FDeletingTimeourMs int = 10 * 1000
 
 type B6FPacket struct {
 	messageType byte
@@ -27,24 +31,26 @@ func MakeB6FPacketFromBytes(buffer []byte) (B6FPacket, error) {
 	packet := B6FPacket{}
 	packet.messageType = buffer[0]
 	switch packet.messageType {
-	case Report:
+	case B6F_MT_Report:
 		{
+			var length int16
+			_ = binary.Read(bytes.NewBuffer(buffer[1:]), binary.BigEndian, &length)
+
+			if int(length) > len(buffer[3:]) {
+				length = int16(len(buffer[3:]))
+			}
+
+			packet.id = string(buffer[3 : 3+length])
+
+			return packet, nil
+
 		}
-	case Leave:
+	case B6F_MT_Leave:
 		{
 			return packet, nil
 		}
 	}
-	var length int16
-	_ = binary.Read(bytes.NewBuffer(buffer[1:]), binary.BigEndian, &length)
-
-	if int(length) > len(buffer[3:]) {
-		length = int16(len(buffer[3:]))
-	}
-
-	packet.id = string(buffer[3 : 3+length])
-
-	return packet, nil
+	return B6FPacket{}, errors.New("unknown message type")
 }
 
 func MakeB6FPacketReport(id string) (B6FPacket, error) {
@@ -52,11 +58,11 @@ func MakeB6FPacketReport(id string) (B6FPacket, error) {
 		return B6FPacket{}, errors.New("id is too big")
 	}
 
-	return B6FPacket{messageType: Report, id: id}, nil
+	return B6FPacket{messageType: B6F_MT_Report, id: id}, nil
 }
 
 func MakeB6FPacketLeave() B6FPacket {
-	return B6FPacket{messageType: Leave, id: ""}
+	return B6FPacket{messageType: B6F_MT_Leave, id: ""}
 }
 
 func (s *B6FPacket) MessageType() byte {
@@ -69,13 +75,13 @@ func (s *B6FPacket) Id() string {
 
 func (s *B6FPacket) ToBytes() []byte {
 	switch s.messageType {
-	case Leave:
+	case B6F_MT_Leave:
 		{
 			buf := make([]byte, 1)
-			buf[0] = Leave
+			buf[0] = B6F_MT_Leave
 			return buf
 		}
-	case Report:
+	case B6F_MT_Report:
 		{
 			byteSlice := make([]byte, 0)
 			buffer := bytes.NewBuffer(byteSlice)
@@ -87,6 +93,6 @@ func (s *B6FPacket) ToBytes() []byte {
 		}
 	}
 	buf := make([]byte, 1)
-	buf[0] = Leave
+	buf[0] = B6F_MT_Leave
 	return buf
 }
