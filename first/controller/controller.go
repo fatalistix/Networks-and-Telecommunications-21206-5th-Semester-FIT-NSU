@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"net"
+	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 
@@ -22,6 +24,7 @@ type Controller struct {
 	ip4Server        *ip4.IP4B6FServer
 	bufferSize       int
 	buffer           []byte
+	ticker           time.Ticker
 }
 
 func NewController(window fyne.Window) *Controller {
@@ -39,7 +42,7 @@ func (s *Controller) handleError(err error) {
 
 func (s *Controller) ip4Pressed(ip, iden string) {
 	s.window.SetContent(s.listViewHandler.Container())
-	s.listViewHandler.UpdateTitle(ip, model.B6FPort, iden)
+	s.listViewHandler.UpdateTitle(ip+":"+strconv.Itoa(model.B6FPort), iden)
 	var err error
 	s.ip4Server, err = ip4.NewIP4B6FServer(ip, model.B6FPort, iden)
 	if err != nil {
@@ -50,15 +53,15 @@ func (s *Controller) ip4Pressed(ip, iden string) {
 		s.buffer,
 		model.B6FSendingTimeoutMs,
 		numOfErrors,
-		func(addr *net.UDPAddr, packet model.B6FPacket) {
+		func(addr net.Addr, packet model.B6FPacket) {
 			switch packet.MessageType() {
 			case model.B6F_MT_Report:
 				{
-					s.listViewHandler.Add(addr.IP.String(), addr.Port, packet.Id())
+					s.listViewHandler.Add(addr.String(), packet.Id())
 				}
 			case model.B6F_MT_Leave:
 				{
-					s.listViewHandler.Remove(addr.IP.String(), addr.Port)
+					s.listViewHandler.Remove(addr.String())
 				}
 			}
 		},
@@ -89,6 +92,7 @@ func (s *Controller) Init() {
 	s.listViewHandler = view.NewListWindowView("MOCK", "MOCK", model.B6FPort, func() {
 		s.window.SetContent(s.startView)
 		s.ip4Server.Close()
+		s.listViewHandler.ClearList()
 	})
 
 	s.errorViewHandler = view.NewErrorViewHandler(func() {
