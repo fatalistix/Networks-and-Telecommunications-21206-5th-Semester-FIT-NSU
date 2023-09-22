@@ -12,7 +12,7 @@ import (
 type ListWindowViewHandler struct {
 	cont       *fyne.Container
 	users      []string
-	ipToUserId map[string]int
+	ipToUserId map[string]string
 	list       *widget.List
 	titleLabel *widget.Label
 }
@@ -24,7 +24,7 @@ func NewListWindowView(
 ) *ListWindowViewHandler {
 	handler := ListWindowViewHandler{}
 	handler.users = make([]string, 0)
-	handler.ipToUserId = make(map[string]int)
+	handler.ipToUserId = make(map[string]string)
 
 	topLabel := widget.NewLabel(myName + "#" + myIp + ":" + strconv.Itoa(port))
 	topLabel.Importance = widget.HighImportance
@@ -49,27 +49,33 @@ func (s *ListWindowViewHandler) Container() *fyne.Container {
 	return s.cont
 }
 
-func (s *ListWindowViewHandler) Add(ip string, port int, id string) {
-	ipWithPort := ip + ":" + strconv.Itoa(port)
-	_, ok := s.ipToUserId[ipWithPort]
+func (s *ListWindowViewHandler) Add(addr, id string) {
+	s.ipToUserId[addr] = id
+	s.refreshList()
+}
+
+func (s *ListWindowViewHandler) Remove(addr string) {
+	_, ok := s.ipToUserId[addr]
 	if ok {
-		return
+		delete(s.ipToUserId, addr)
+		s.refreshList()
 	}
-	s.ipToUserId[ipWithPort] = len(s.users)
-	s.users = append(s.users, ipWithPort+"#"+id)
+}
+
+func (s *ListWindowViewHandler) UpdateTitle(addr, id string) {
+	s.titleLabel.SetText(addr + "#" + id)
+}
+
+func (s *ListWindowViewHandler) ClearList() {
+	s.users = make([]string, 0)
+	s.ipToUserId = make(map[string]string)
 	s.list.Refresh()
 }
 
-func (s *ListWindowViewHandler) Remove(ip string, port int) {
-	ipWithPort := ip + ":" + strconv.Itoa(port)
-	index, ok := s.ipToUserId[ipWithPort]
-	if ok {
-		s.users = append(s.users[:index], s.users[index+1:]...)
-		delete(s.ipToUserId, ipWithPort)
-		s.list.Refresh()
+func (s *ListWindowViewHandler) refreshList() {
+	s.users = make([]string, 0, len(s.ipToUserId))
+	for k, v := range s.ipToUserId {
+		s.users = append(s.users, k+"#"+v)
 	}
-}
-
-func (s *ListWindowViewHandler) UpdateTitle(ip string, port int, id string) {
-	s.titleLabel.SetText(id + "#" + ip + "#" + strconv.Itoa(port))
+	s.list.Refresh()
 }
