@@ -15,6 +15,11 @@ import (
 
 const numOfErrors int = 5
 
+type addrWithId struct {
+	Addr   string
+	Packet model.B6FPacket
+}
+
 type Controller struct {
 	startView        *fyne.Container
 	listViewHandler  *view.ListWindowViewHandler
@@ -24,7 +29,8 @@ type Controller struct {
 	ip4Server        *ip4.IP4B6FServer
 	bufferSize       int
 	buffer           []byte
-	ticker           time.Ticker
+	updaterClose     chan bool
+	updaterNewPacket chan addrWithId
 }
 
 func NewController(window fyne.Window) *Controller {
@@ -32,12 +38,56 @@ func NewController(window fyne.Window) *Controller {
 	controller.window = window
 	controller.bufferSize = 1024
 	controller.buffer = make([]byte, controller.bufferSize)
+	controller.updaterClose = make(chan bool)
+	controller.updaterNewPacket = make(chan addrWithId)
 	return &controller
 }
 
 func (s *Controller) handleError(err error) {
 	s.errorViewHandler.UpdateErrorDescription(err)
 	s.window.SetContent(s.errorViewHandler.Container())
+}
+
+func (s *Controller) createUpdater() {
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		lastPacketTime := make(map[string]time.Time)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-s.updaterClose:
+				{
+					s.listViewHandler.ClearList()
+					return
+				}
+			case data := <-s.updaterNewPacket:
+				{
+					switch data.Packet.MessageType() {
+					case model.B6F_MT_Report:
+						{
+							lastPacketTime[data.Addr] = time.Now()
+							s.listViewHandler.Add(data.Addr, data.Packet.Id())
+						}
+					case model.B6F_MT_Leave:
+						{
+							delete(lastPacketTime, data.Addr)
+							s.listViewHandler.Remove(data.Addr)
+						}
+					}
+				}
+			case <-ticker.C:
+				{
+					currentTime := time.Now()
+					for k, v := range lastPacketTime {
+						if currentTime.Sub(v) >= model.B6FDeletingTimeourMs*time.Millisecond {
+							delete(lastPacketTime, k)
+							s.listViewHandler.Remove(k)
+						}
+					}
+				}
+			}
+		}
+	}()
 }
 
 func (s *Controller) ip4Pressed(ip, iden string) {
@@ -54,16 +104,7 @@ func (s *Controller) ip4Pressed(ip, iden string) {
 		model.B6FSendingTimeoutMs,
 		numOfErrors,
 		func(addr net.Addr, packet model.B6FPacket) {
-			switch packet.MessageType() {
-			case model.B6F_MT_Report:
-				{
-					s.listViewHandler.Add(addr.String(), packet.Id())
-				}
-			case model.B6F_MT_Leave:
-				{
-					s.listViewHandler.Remove(addr.String())
-				}
-			}
+			s.updaterNewPacket <- addrWithId{Addr: addr.String(), Packet: packet}
 		},
 	)
 
@@ -82,8 +123,10 @@ func (s *Controller) Init() {
 	})
 
 	s.startView = view.NewStartWindowView(func(ip, iden string) {
+		s.createUpdater()
 		s.ip4Pressed(ip, iden)
 	}, func(ip, iden string) {
+		// s.createUpdater()
 		s.ip16Pressed(ip, iden)
 	}, func() {
 		s.window.SetContent(s.settingsView)
@@ -92,6 +135,7 @@ func (s *Controller) Init() {
 	s.listViewHandler = view.NewListWindowView("MOCK", "MOCK", model.B6FPort, func() {
 		s.window.SetContent(s.startView)
 		s.ip4Server.Close()
+		s.updaterClose <- true
 		s.listViewHandler.ClearList()
 	})
 
