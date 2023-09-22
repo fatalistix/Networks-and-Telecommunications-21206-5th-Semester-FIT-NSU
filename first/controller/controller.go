@@ -151,6 +151,8 @@ func (s *Controller) Init() {
 
 	s.errorViewHandler = view.NewErrorViewHandler(func() {
 		s.window.SetContent(s.startView)
+		s.server.Close()
+		s.updaterClose <- true
 	})
 
 	s.window.SetContent(s.startView)
