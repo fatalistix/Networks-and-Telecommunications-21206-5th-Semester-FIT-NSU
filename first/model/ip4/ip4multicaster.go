@@ -4,13 +4,17 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"strings"
+
+	"golang.org/x/net/ipv4"
 
 	"networks/first/model"
 )
 
 type IP4Multicaster struct {
-	conn                    net.Conn
+	packConn                *ipv4.PacketConn
 	localMulticastValidator model.LocalMulticastValidator
+	udp4Addr                *net.UDPAddr
 }
 
 func NewIP4Multicaster() *IP4Multicaster {
@@ -25,14 +29,41 @@ func (s *IP4Multicaster) Connect(ip4Group string, port int) error {
 		return err
 	}
 
-	udp4Addr, err := net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
+	// s.conn, err = net.DialUDP("udp4", nil, udp4Addr)
+	// if err != nil {
+	// 	return err
+	// }
+
+	s.udp4Addr, err = net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
 	if err != nil {
 		return err
 	}
 
-	s.conn, err = net.DialUDP("udp4", nil, udp4Addr)
+	nifaces, err := net.Interfaces()
 	if err != nil {
 		return err
+	}
+
+	for _, nif := range nifaces {
+		if strings.HasPrefix(nif.Name, "lo") {
+			continue
+		}
+
+		conn, err := net.ListenPacket("udp4", "0.0.0.0:0")
+		if err != nil {
+			continue
+		}
+
+		pc := ipv4.NewPacketConn(conn)
+
+		err = pc.JoinGroup(&nif, s.udp4Addr)
+		if err != nil {
+			conn.Close()
+			continue
+		}
+
+		s.packConn = pc
+		break
 	}
 
 	return nil
@@ -47,7 +78,7 @@ func (s *IP4Multicaster) Multicast(buffer []byte) error {
 	n := -1
 	var err error
 	for targetBytes != n {
-		n, err = s.conn.Write(buffer)
+		n, err = s.packConn.WriteTo(buffer, nil, s.udp4Addr)
 		if n == 0 {
 			return errors.New("connection closed")
 		}
@@ -59,9 +90,9 @@ func (s *IP4Multicaster) Multicast(buffer []byte) error {
 }
 
 func (s *IP4Multicaster) Close() error {
-	return s.conn.Close()
+	return s.packConn.Close()
 }
 
 func (s *IP4Multicaster) GetLocalAddress() string {
-	return s.conn.LocalAddr().String()
+	return s.packConn.LocalAddr().String()
 }
