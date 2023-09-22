@@ -12,9 +12,9 @@ const (
 	B6F_MT_Leave  byte = 2
 )
 
-const B6FPort int = 6969
-const B6FSendingTimeoutMs int = 3 * 1000
-const B6FDeletingTimeourMs int = 10 * 1000
+const B6FPort = 6969
+const B6FSendingTimeoutMs = 3 * 1000
+const B6FDeletingTimeourMs = 10 * 1000
 
 type B6FPacket struct {
 	messageType byte
