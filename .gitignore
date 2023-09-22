@@ -1,1 +1,8 @@
+##### DIRECTORIES #####
 deprecated
+.idea
+bin
+.vscode
+
+##### FILES #####
+*.bak
