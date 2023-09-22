@@ -11,16 +11,17 @@ import (
 )
 
 var logger *log.Logger = log.New(
-	os.Stdout,
+	os.Stdin,
 	"ip4server: ",
 	log.Ldate|log.Ltime|log.Lshortfile|log.Lmicroseconds,
 )
 
 type IP4B6FServer struct {
-	multicaster *IP4Multicaster
-	listener    *IP4MulticastListener
-	id          string
-	quit        chan bool
+	multicaster     *IP4Multicaster
+	listener        *IP4MulticastListener
+	id              string
+	quitMulticaster chan bool
+	quitListener    chan bool
 }
 
 func NewIP4B6FServer(
@@ -46,7 +47,8 @@ func NewIP4B6FServer(
 	}
 
 	server.id = id
-	server.quit = make(chan bool)
+	server.quitMulticaster = make(chan bool)
+	server.quitListener = make(chan bool)
 	logger.Println("server initialized without errors")
 	return &server, nil
 }
@@ -55,7 +57,7 @@ func (s *IP4B6FServer) Start(
 	buffer []byte,
 	timeoutMs int,
 	maxErrors int,
-	onPackageRecieved func(addr *net.UDPAddr, packet model.B6FPacket),
+	onPackageRecieved func(addr net.Addr, packet model.B6FPacket),
 ) error {
 	if timeoutMs <= 0 {
 		logger.Println("invalid argument timeoutMs = ", timeoutMs, ", epxpected >= 0")
@@ -80,30 +82,36 @@ func (s *IP4B6FServer) Start(
 		ticker := time.NewTicker(time.Duration(timeoutMs) * time.Millisecond)
 		logger.Println("sending goroutine: ticker initialized")
 		errCounter := 0
-		for range ticker.C {
+		defer func() {
+			ticker.Stop()
+			logger.Println("sending goroutine: ticker stoped")
+		}()
+		for {
 			select {
-			case <-s.quit:
+			case <-s.quitMulticaster:
 				{
 					logger.Println("sending goroutine: terminated")
 					packet := model.MakeB6FPacketLeave()
 					_ = s.multicaster.Multicast(packet.ToBytes())
 					logger.Println("sending goroutine: sent leave packet")
-					ticker.Stop()
-					logger.Println("sending goroutine: ticker stoped")
+					// ticker.Stop()
+					// logger.Println("sending goroutine: ticker stoped")
 					logger.Println("sending goroutine: return")
-					s.quit <- true
+					s.quitMulticaster <- true
 					return
 				}
-			default:
+			case <-ticker.C:
 				{
 					if errCounter >= maxErrors {
 						logger.Println("sending goroutine: too many errors")
 						packet := model.MakeB6FPacketLeave()
 						_ = s.multicaster.Multicast(packet.ToBytes())
 						logger.Println("sending goroutine: sent leave packet")
-						ticker.Stop()
-						logger.Println("sending goroutine: ticker stoped")
+						// ticker.Stop()
+						// logger.Println("sending goroutine: ticker stoped")
 						logger.Println("sending goroutine: return")
+						<-s.quitMulticaster
+						s.quitMulticaster <- true
 						return
 					}
 
@@ -127,48 +135,66 @@ func (s *IP4B6FServer) Start(
 		logger.Println("listening goroutine: started")
 		errCounter := 0
 		for {
-			if errCounter >= maxErrors {
-				logger.Println("sending goroutine: too many errors")
-				logger.Println("sending goroutine: return")
-				return
-			}
+			select {
+			case <-s.quitListener:
+				{
+					logger.Println("listening goroutine: terminated")
+					logger.Println("listening goroutine: return")
+					s.quitListener <- true
+					return
+				}
+			default:
+				{
+					if errCounter >= maxErrors {
+						s.quitListener <- true
+						logger.Println("sending goroutine: too many errors")
+						logger.Println("sending goroutine: continue")
+						<-s.quitListener
+						s.quitListener <- true
+						continue
+					}
 
-			logger.Println("listening goroutine: listening...")
-			n, addr, err := s.listener.Listen(buffer)
-			logger.Println("listening goroutine: recieved a package")
-			if n == 0 {
-				logger.Println("listening goroutine: recieved a zero length package")
-				logger.Println("listening goroutine: return")
-				return
-			}
+					logger.Println("listening goroutine: listening...")
+					n, _, addr, err := s.listener.Listen(buffer)
+					logger.Println("listening goroutine: recieved a package")
+					if n == 0 {
+						logger.Println("listening goroutine: recieved a zero length package")
+						logger.Println("listening goroutine: continue")
+						errCounter++
+						continue
+					}
 
-			if err != nil {
-				logger.Println("listening goroutine: got error: ", err)
-				errCounter++
-				continue
-			}
+					if err != nil {
+						logger.Println("listening goroutine: got error: ", err)
+						errCounter++
+						continue
+					}
 
-			mCasterIpAddr := s.multicaster.GetLocalAddress()
-			if mCasterIpAddr == addr.String() {
-				logger.Println("listening goroutine: got myself ==> skip")
-				continue
-			}
+					// mCasterIpAddr := s.multicaster.GetLocalAddress()
+					// fmt.Println(mCasterIpAddr, " ", addr.String())
+					// if mCasterIpAddr == addr.String() {
+					// logger.Println("listening goroutine: got myself ==> skip")
+					// continue
+					// }
 
-			logger.Println("listening goroutine: parsing packet...")
-			packet, err := model.MakeB6FPacketFromBytes(buffer)
-			if err != nil {
-				logger.Println("listening goroutine: got error: ", err)
-				logger.Println("listening goroutine: skipping")
-				// errCounter++
-				continue
-			}
+					logger.Println("listening goroutine: parsing packet...")
+					packet, err := model.MakeB6FPacketFromBytes(buffer)
+					if err != nil {
+						logger.Println("listening goroutine: got error: ", err)
+						logger.Println("listening goroutine: skipping")
+						// errCounter++
+						continue
+					}
 
-			logger.Println(
-				"listening goroutine: packet parsed successfully: message type = ",
-				packet.MessageType(),
-			)
-			errCounter = 0
-			onPackageRecieved(addr, packet)
+					logger.Println(
+						"listening goroutine: packet parsed successfully: message type = ",
+						packet.MessageType(),
+					)
+					errCounter = 0
+					onPackageRecieved(addr, packet)
+				}
+
+			}
 		}
 	}()
 
@@ -176,8 +202,10 @@ func (s *IP4B6FServer) Start(
 }
 
 func (s *IP4B6FServer) Close() error {
-	s.quit <- true
-	<-s.quit
+	s.quitMulticaster <- true
+	<-s.quitMulticaster
+	s.quitListener <- true
+	<-s.quitListener
 	logger.Println("closing server...")
 	err1 := s.multicaster.Close()
 	logger.Println("multicaster closed")
