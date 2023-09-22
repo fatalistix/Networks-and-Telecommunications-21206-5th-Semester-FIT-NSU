@@ -1,7 +1,6 @@
 package ip4
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -10,6 +9,8 @@ import (
 
 	"networks/first/model"
 )
+
+var _ model.MulticastListener = (*IP4MulticastListener)(nil)
 
 type IP4MulticastListener struct {
 	localMulticastValidator model.LocalMulticastValidator
@@ -40,7 +41,6 @@ func (s *IP4MulticastListener) Bind(ip4Group string, port int) error {
 	// }
 
 	udp4Addr, err := net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
-	fmt.Println(udp4Addr)
 	if err != nil {
 		return err
 	}
@@ -77,9 +77,10 @@ func (s *IP4MulticastListener) Bind(ip4Group string, port int) error {
 
 func (s *IP4MulticastListener) Listen(
 	buffer []byte,
-) (int, *ipv4.ControlMessage, net.Addr, error) {
+) (int, net.Addr, error) {
 	// return s.conn.ReadFromUDP(buffer)
-	return s.packConn.ReadFrom(buffer)
+	n, _, addr, err := s.packConn.ReadFrom(buffer)
+	return n, addr, err
 }
 
 func (s *IP4MulticastListener) Close() error {
