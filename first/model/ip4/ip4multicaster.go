@@ -11,6 +11,8 @@ import (
 	"networks/first/model"
 )
 
+var _ model.Multicaster = (*IP4Multicaster)(nil)
+
 type IP4Multicaster struct {
 	packConn                *ipv4.PacketConn
 	localMulticastValidator model.LocalMulticastValidator
@@ -79,7 +81,7 @@ func (s *IP4Multicaster) Multicast(buffer []byte) error {
 	var err error
 	for targetBytes != n {
 		n, err = s.packConn.WriteTo(buffer, nil, s.udp4Addr)
-		if n == 0 {
+		if n == 0 && targetBytes != 0 {
 			return errors.New("connection closed")
 		}
 		if err != nil {
