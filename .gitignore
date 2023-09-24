@@ -1,8 +1,41 @@
+#######################
 ##### DIRECTORIES #####
-deprecated
+#######################
+# Ignore IDE's directories
 .idea
-bin
 .vscode
 
+# Ignore deprecated user's directories
+deprecated
+
+# Ignore binary user's directories
+bin
+
+### Gradle
+.gradle
+**/build/
+!src/**/build/
+
+#################
 ##### FILES #####
+#################
+# Ignore backup files
 *.bak
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Avoid ignore Gradle wrappper properties
+!gradle-wrapper.properties
+
+# Cache of project
+.gradletasknamecache
+
+# Eclipse Gradle plugin generated files
+# Eclipse Core
+.project
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
