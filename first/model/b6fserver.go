@@ -11,9 +11,11 @@ const (
 	B6F_MT_Leave  byte = 2
 )
 
-const B6FPort = 6969
-const B6FSendingTimeoutMs = 3 * 1000
-const B6FDeletingTimeourMs = 10 * 1000
+const (
+	B6FPort              = 6969
+	B6FSendingTimeoutMs  = 3 * 1000
+	B6FDeletingTimeourMs = 10 * 1000
+)
 
 // var logger *log.Logger = log.New(
 // 	os.Stdin,
@@ -101,7 +103,6 @@ func (s *B6FServer) Start(
 					packet := MakeB6FPacketLeave()
 					_ = s.multicaster.Multicast(packet.ToBytes())
 					// logger.Println("sending goroutine: sent leave packet")
-					// ticker.Stop()
 					// logger.Println("sending goroutine: ticker stoped")
 					// logger.Println("sending goroutine: return")
 					s.quitMulticaster <- true
@@ -114,7 +115,6 @@ func (s *B6FServer) Start(
 						packet := MakeB6FPacketLeave()
 						_ = s.multicaster.Multicast(packet.ToBytes())
 						// logger.Println("sending goroutine: sent leave packet")
-						// ticker.Stop()
 						// logger.Println("sending goroutine: ticker stoped")
 						// logger.Println("sending goroutine: return")
 						<-s.quitMulticaster
@@ -178,7 +178,6 @@ func (s *B6FServer) Start(
 					}
 
 					// mCasterIpAddr := s.multicaster.GetLocalAddress()
-					// fmt.Println(mCasterIpAddr, " ", addr.String())
 					// if mCasterIpAddr == addr.String() {
 					// logger.Println("listening goroutine: got myself ==> skip")
 					// continue
