@@ -2,12 +2,10 @@ package ip16
 
 import (
 	"net"
+	"networks/first/model"
 	"strconv"
-	"strings"
 
 	"golang.org/x/net/ipv6"
-
-	"networks/first/model"
 )
 
 var _ model.MulticastListener = (*IP16MulticastListener)(nil)
@@ -35,7 +33,19 @@ func (s *IP16MulticastListener) Bind(ip16Group string, port int) error {
 	}
 
 	for _, nif := range nifaces {
-		if strings.HasPrefix(nif.Name, "lo") {
+		if nif.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagRunning == 0 {
 			continue
 		}
 
@@ -60,7 +70,6 @@ func (s *IP16MulticastListener) Bind(ip16Group string, port int) error {
 }
 
 func (s *IP16MulticastListener) Listen(buffer []byte) (int, net.Addr, error) {
-	// return s.packConn.ReadFrom(buffer)
 	n, _, addr, err := s.packConn.ReadFrom(buffer)
 	return n, addr, err
 }
