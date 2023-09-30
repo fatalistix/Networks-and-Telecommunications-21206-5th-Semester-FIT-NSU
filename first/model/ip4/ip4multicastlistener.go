@@ -2,12 +2,10 @@ package ip4
 
 import (
 	"net"
+	"networks/first/model"
 	"strconv"
-	"strings"
 
 	"golang.org/x/net/ipv4"
-
-	"networks/first/model"
 )
 
 var _ model.MulticastListener = (*IP4MulticastListener)(nil)
@@ -15,7 +13,6 @@ var _ model.MulticastListener = (*IP4MulticastListener)(nil)
 type IP4MulticastListener struct {
 	localMulticastValidator model.LocalMulticastValidator
 	packConn                *ipv4.PacketConn
-	// conn                    *net.UDPConn
 }
 
 func NewIP4MulticastListener() *IP4MulticastListener {
@@ -25,21 +22,6 @@ func NewIP4MulticastListener() *IP4MulticastListener {
 }
 
 func (s *IP4MulticastListener) Bind(ip4Group string, port int) error {
-	// err := s.localMulticastValidator.Validate(ip4Group)
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// udp4Addr, err := net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// s.conn, err = net.ListenMulticastUDP("udp4", nil, udp4Addr)
-	// if err != nil {
-	// 	return err
-	// }
-
 	udp4Addr, err := net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
 	if err != nil {
 		return err
@@ -51,7 +33,19 @@ func (s *IP4MulticastListener) Bind(ip4Group string, port int) error {
 	}
 
 	for _, nif := range nifaces {
-		if strings.HasPrefix(nif.Name, "lo") {
+		if nif.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagRunning == 0 {
 			continue
 		}
 
@@ -78,7 +72,6 @@ func (s *IP4MulticastListener) Bind(ip4Group string, port int) error {
 func (s *IP4MulticastListener) Listen(
 	buffer []byte,
 ) (int, net.Addr, error) {
-	// return s.conn.ReadFromUDP(buffer)
 	n, _, addr, err := s.packConn.ReadFrom(buffer)
 	return n, addr, err
 }
