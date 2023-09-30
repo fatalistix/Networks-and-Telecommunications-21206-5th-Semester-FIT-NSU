@@ -3,12 +3,10 @@ package ip16
 import (
 	"errors"
 	"net"
+	"networks/first/model"
 	"strconv"
-	"strings"
 
 	"golang.org/x/net/ipv6"
-
-	"networks/first/model"
 )
 
 var _ model.Multicaster = (*IP16Multicaster)(nil)
@@ -42,11 +40,23 @@ func (s *IP16Multicaster) Connect(ip16Group string, port int) error {
 	}
 
 	for _, nif := range nifaces {
-		if strings.HasPrefix(nif.Name, "lo") {
+		if nif.Flags&net.FlagLoopback != 0 {
 			continue
 		}
 
-		conn, err := net.ListenPacket("udp6", ":0")
+		if nif.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagRunning == 0 {
+			continue
+		}
+
+		conn, err := net.DialUDP("udp6", nil, s.udp16Addr)
 		if err != nil {
 			continue
 		}
