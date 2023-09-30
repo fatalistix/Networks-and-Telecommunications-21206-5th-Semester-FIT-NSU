@@ -1,26 +1,27 @@
+// Package controller that contains Controller struct
 package controller
 
 import (
 	"net"
+	"networks/first/model"
+	"networks/first/model/ip16"
+	"networks/first/model/ip4"
+	"networks/first/view"
 	"strconv"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-
-	"networks/first/model"
-	"networks/first/model/ip16"
-	"networks/first/model/ip4"
-	"networks/first/view"
 )
 
 const numOfErrors int = 5
 
-type addrWithId struct {
+type addrWithID struct {
 	Addr   string
 	Packet model.B6FPacket
 }
 
+// Controller struct, that manages views and contains server
 type Controller struct {
 	startView        *fyne.Container
 	listViewHandler  *view.ListWindowViewHandler
@@ -31,16 +32,17 @@ type Controller struct {
 	bufferSize       int
 	buffer           []byte
 	updaterClose     chan bool
-	updaterNewPacket chan addrWithId
+	updaterNewPacket chan addrWithID
 }
 
+// NewController creates new controller. It requires fyne.Window object where controller will be changing views.
 func NewController(window fyne.Window) *Controller {
 	controller := Controller{}
 	controller.window = window
 	controller.bufferSize = 1024
 	controller.buffer = make([]byte, controller.bufferSize)
 	controller.updaterClose = make(chan bool)
-	controller.updaterNewPacket = make(chan addrWithId)
+	controller.updaterNewPacket = make(chan addrWithID)
 	return &controller
 }
 
@@ -109,7 +111,7 @@ func (s *Controller) startServer(
 		model.B6FSendingTimeoutMs,
 		numOfErrors,
 		func(addr net.Addr, packet model.B6FPacket) {
-			s.updaterNewPacket <- addrWithId{Addr: addr.String(), Packet: packet}
+			s.updaterNewPacket <- addrWithID{Addr: addr.String(), Packet: packet}
 		},
 	)
 
@@ -127,6 +129,7 @@ func (s *Controller) ip16Pressed(ip, iden string) {
 	s.startServer(ip, iden, ip16.NewIP16Multicaster(), ip16.NewIP16MulticastListener())
 }
 
+// Init controller's method inits all controller's views and it's interactive logic
 func (s *Controller) Init() {
 	s.settingsView = view.NewSettingsView(s.window, func() {
 		s.window.SetContent(s.startView)
