@@ -1,18 +1,18 @@
+// Package ip4 for manipulating ipv4 multicasts
 package ip4
 
 import (
 	"errors"
 	"net"
+	"networks/first/model"
 	"strconv"
-	"strings"
 
 	"golang.org/x/net/ipv4"
-
-	"networks/first/model"
 )
 
 var _ model.Multicaster = (*IP4Multicaster)(nil)
 
+// IP4Multicaster struct helps to multicast messages
 type IP4Multicaster struct {
 	packConn                *ipv4.PacketConn
 	localMulticastValidator model.LocalMulticastValidator
@@ -31,11 +31,6 @@ func (s *IP4Multicaster) Connect(ip4Group string, port int) error {
 		return err
 	}
 
-	// s.conn, err = net.DialUDP("udp4", nil, udp4Addr)
-	// if err != nil {
-	// 	return err
-	// }
-
 	s.udp4Addr, err = net.ResolveUDPAddr("udp4", ip4Group+":"+strconv.Itoa(port))
 	if err != nil {
 		return err
@@ -47,11 +42,23 @@ func (s *IP4Multicaster) Connect(ip4Group string, port int) error {
 	}
 
 	for _, nif := range nifaces {
-		if strings.HasPrefix(nif.Name, "lo") {
+		if nif.Flags&net.FlagLoopback != 0 {
 			continue
 		}
 
-		conn, err := net.ListenPacket("udp4", "0.0.0.0:0")
+		if nif.Flags&net.FlagMulticast == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if nif.Flags&net.FlagRunning == 0 {
+			continue
+		}
+
+		conn, err := net.DialUDP("udp4", nil, s.udp4Addr)
 		if err != nil {
 			continue
 		}
