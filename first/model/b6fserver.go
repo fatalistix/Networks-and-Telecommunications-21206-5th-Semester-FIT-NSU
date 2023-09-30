@@ -177,11 +177,11 @@ func (s *B6FServer) Start(
 						continue
 					}
 
-					// mCasterIpAddr := s.multicaster.GetLocalAddress()
-					// if mCasterIpAddr == addr.String() {
-					// logger.Println("listening goroutine: got myself ==> skip")
-					// continue
-					// }
+					mCasterIpAddr := s.multicaster.GetLocalAddress()
+					if mCasterIpAddr == addr.String() {
+						// logger.Println("listening goroutine: got myself ==> skip")
+						continue
+					}
 
 					// logger.Println("listening goroutine: parsing packet...")
 					packet, err := MakeB6FPacketFromBytes(buffer)
