@@ -1,56 +1,53 @@
 package ru.nsu.vbalashov2.tcpfileserver;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.net.SocketAddress;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ChannelAttachment {
-  private Path finalFilePath;
-  private final long fileLength;
-  private long alreadyWrote = 0;
+  private final SocketAddress socketAddress;
+  private String fileName;
+  private long fileLength;
+  private final FileWriter fileWriter = new FileWriter();
+  private AtomicLong alreadyWrote = new AtomicLong();
+  private AtomicLong wroteSinceLastGet = new AtomicLong();
+  private Instant creationTime;
+  private boolean completed = false;
+  private Instant completionTime;
 
-  public ChannelAttachment(long fileLength) { this.fileLength = fileLength; }
+  public ChannelAttachment(SocketAddress socketAddress) {
+    this.socketAddress = socketAddress;
+  }
 
-  public void createFile(String fileName) throws IOException {
-    Path uploadsDirPath = Path.of(".", "uploads");
-    if (!Files.exists(uploadsDirPath)) {
-      Files.createDirectory(uploadsDirPath);
-    }
-    Path filePath = uploadsDirPath.resolve(fileName);
-    if (Files.exists(filePath)) {
-      String[] splitted = fileName.split(".");
-      int index = 0;
-      Path filePathWithNum;
-      String fileNameWithoutExt = splitted[0];
-      if (splitted.length != 1) {
-        for (int i = 1; i < splitted.length - 1; ++i) {
-          fileNameWithoutExt += splitted[i];
-        }
-      }
+  public void createFile(String fileName, long fileLength) throws IOException {
+    fileWriter.createFile(fileName);
+    this.fileLength = fileLength;
+    this.fileName = fileWriter.getFileName();
+    this.creationTime = Instant.now();
+  }
 
-      do {
-        if (splitted.length == 1) {
-          filePathWithNum =
-              uploadsDirPath.resolve(fileNameWithoutExt + "(" + index + ")");
-        } else {
-          filePathWithNum =
-              uploadsDirPath.resolve(fileNameWithoutExt + "(" + index + ")" +
-                                     splitted[splitted.length - 1]);
-        }
-      } while (!Files.exists(filePathWithNum));
-      Files.createFile(filePathWithNum);
-      finalFilePath = filePathWithNum;
-    } else {
-      Files.createFile(filePath);
-      finalFilePath = filePath;
+  public void write(byte[] bytes, int length) throws IOException {
+    fileWriter.write(bytes, length);
+    alreadyWrote.getAndAdd(length);
+    wroteSinceLastGet.getAndAdd(length);
+    if (fileFullyWrote()) {
+      completed = true;
+      completionTime = Instant.now();
     }
   }
 
-  public void write(byte[] bytes) throws IOException {
-    Files.write(finalFilePath, bytes, StandardOpenOption.APPEND);
-    alreadyWrote += bytes.length;
+  public boolean fileFullyWrote() { return alreadyWrote.get() == fileLength; }
+
+  public void close() throws IOException {
+    completed = true;
+    completionTime = Instant.now();
+    fileWriter.close();
   }
 
-  public boolean fileFullyWrote() { return alreadyWrote == fileLength; }
+  public AttachmentInfo get() {
+    return new AttachmentInfo(fileName, fileLength, socketAddress,
+                              alreadyWrote.get(),
+                              wroteSinceLastGet.getAndSet(0), creationTime, completed, completionTime);
+  }
 }
