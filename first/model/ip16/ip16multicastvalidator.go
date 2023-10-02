@@ -2,16 +2,14 @@ package ip16
 
 import (
 	"errors"
+	"networks/first/model"
 	"strconv"
 	"strings"
-
-	"networks/first/model"
 )
 
 var _ model.LocalMulticastValidator = IP16LocalMulticastValidator{}
 
-type IP16LocalMulticastValidator struct {
-}
+type IP16LocalMulticastValidator struct{}
 
 func MakeIP16LocalMulticastValidator() IP16LocalMulticastValidator {
 	return IP16LocalMulticastValidator{}
