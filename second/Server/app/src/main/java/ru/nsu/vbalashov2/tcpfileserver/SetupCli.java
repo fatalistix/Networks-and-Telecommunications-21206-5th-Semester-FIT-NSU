@@ -40,6 +40,8 @@ public class SetupCli implements Setup {
         } catch (InputMismatchException | IllegalArgumentException e) {
           System.out.println(
               "Error: expected 0 <= number <= 65535 in decimal format");
+          scanner.nextLine();
+          System.out.print("Type server's listening port: ");
         }
       }
     }
