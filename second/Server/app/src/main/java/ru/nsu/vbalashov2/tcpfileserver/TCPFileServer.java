@@ -148,7 +148,9 @@ public class TCPFileServer {
   private void closeChannel(SelectionKey key) {
     try {
       key.channel().close();
-      ((ChannelAttachment)key.attachment()).close();
+      if (key.attachment() != null) {
+        ((ChannelAttachment)key.attachment()).close();
+      }
     } catch (IOException ignored) {
     }
   }
