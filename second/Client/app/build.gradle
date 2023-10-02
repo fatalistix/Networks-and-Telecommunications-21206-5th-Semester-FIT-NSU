@@ -42,12 +42,16 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+run {
+    standardInput = System.in
+}
+
 jar {
     manifest {
         attributes 'Main-Class': application.mainClass
     }
 
     from {
-        configuration.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
