@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"sync"
 )
 
 type Socks5Proxy struct {
@@ -12,6 +13,7 @@ type Socks5Proxy struct {
 	tcpListener   *net.TCPListener
 	closers       map[io.Closer]bool
 	closed        bool
+	closersMutex  sync.Mutex
 }
 
 func NewSocks5Proxy() *Socks5Proxy {
@@ -51,9 +53,13 @@ func (s *Socks5Proxy) Serve() error {
 
 		go func() {
 			server := newSingleConnectionServer(tcpConn)
+			s.closersMutex.Lock()
 			s.closers[server] = true
+			s.closersMutex.Unlock()
 			err = server.Serve()
+			s.closersMutex.Lock()
 			delete(s.closers, server)
+			s.closersMutex.Unlock()
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -67,8 +73,10 @@ func (s *Socks5Proxy) Close() error {
 	if err != nil {
 		return fmt.Errorf("close: error closing tcp listener: %w", err)
 	}
+	s.closersMutex.Lock()
 	for k := range s.closers {
 		_ = k.Close()
 	}
+	s.closersMutex.Unlock()
 	return nil
 }
