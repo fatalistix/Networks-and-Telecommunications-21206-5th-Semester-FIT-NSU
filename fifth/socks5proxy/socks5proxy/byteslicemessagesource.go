@@ -26,14 +26,12 @@ func (s *byteSliceMessageSource) ReadGreetingMessage() (socks5GreetingMessage, e
 		totallyReadBytes = 0
 		err              error
 	)
-	fmt.Println("HERE IN GREETING")
 
 	readBytes, err = s.reader.Read(s.buffer)
 	if err != nil {
 		return socks5GreetingMessage{}, fmt.Errorf("getGreetingMessage: error reading: %w", err)
 	}
 	totallyReadBytes += readBytes
-	fmt.Println("greeting: read ", totallyReadBytes)
 
 	for !greetingMessageEnoughBytes(s.buffer[:totallyReadBytes]) {
 		readBytes, err = s.reader.Read(s.buffer[totallyReadBytes:])
@@ -42,14 +40,10 @@ func (s *byteSliceMessageSource) ReadGreetingMessage() (socks5GreetingMessage, e
 		}
 		totallyReadBytes += readBytes
 	}
-	fmt.Println("read all greeting bytes")
 
 	if !correctGreetingMessage(s.buffer[:totallyReadBytes]) {
-
-		fmt.Println("GREETING MESSAGE INCORRECT")
 		return socks5GreetingMessage{}, fmt.Errorf("getGreetingMessage: recieved invalid greeting message")
 	}
-	fmt.Println("read correct greeting message")
 
 	return makeMessageFromBytes(s.buffer), nil
 }
