@@ -9,10 +9,10 @@ import (
 )
 
 type messageSource interface {
-	readGreetingMessage() (socks5GreetingMessage, error)
-	writeGreetingAnswer(socks5GreetingAnswer) error
-	readClientMessage() (socks5ClientMessage, error)
-	writeServerAnswer(socks5ServerAnswer) error
+	ReadGreetingMessage() (socks5GreetingMessage, error)
+	WriteGreetingAnswer(socks5GreetingAnswer) error
+	ReadClientMessage() (socks5ClientMessage, error)
+	WriteServerAnswer(socks5ServerAnswer) error
 }
 
 type singleConnectionServer struct {
@@ -34,49 +34,44 @@ func (s *singleConnectionServer) Serve() error {
 
 	var err error
 
-	_, err = s.messageSource.readGreetingMessage()
+	_, err = s.messageSource.ReadGreetingMessage()
 	if err != nil {
 		return fmt.Errorf("serve: error reading greeting message: %w", err)
 	}
-	fmt.Println("wrote greeting from client")
 
-	greetingAnswer := socks5GreetingAnswer{SocksVersion: 5, AuthMethod: 0}
-	err = s.messageSource.writeGreetingAnswer(greetingAnswer)
+	greetingAnswer := socks5GreetingAnswer{SocksVersion: socks5, AuthMethod: 0}
+	err = s.messageSource.WriteGreetingAnswer(greetingAnswer)
 	if err != nil {
 		return fmt.Errorf("serve: error writing greeting answer: %w", err)
 	}
-	fmt.Println("wrote greeting to client")
 
 	var clientMessage socks5ClientMessage
-	clientMessage, err = s.messageSource.readClientMessage()
+	clientMessage, err = s.messageSource.ReadClientMessage()
 	if err != nil {
 		return fmt.Errorf("serve: error reading client message: %w", err)
 	}
-	fmt.Println("read client message")
 
 	switch clientMessage.MessageCode {
-	case 1:
-		switch clientMessage.AddressType {
-		case 1, 3, 4:
-			tcpRemoteConn, err := net.DialTimeout("tcp", string(clientMessage.AddressPayload)+":"+strconv.Itoa(int(clientMessage.Port)), s.timeout)
+	case establishTCP:
+		tcpRemoteConn, err := net.DialTimeout("tcp", string(clientMessage.AddressPayload)+":"+strconv.Itoa(int(clientMessage.Port)), s.timeout)
+		if err != nil {
+			err = s.sendHostUnreachable(clientMessage)
 			if err != nil {
-				err = s.sendHostUnreachable(clientMessage)
-				if err != nil {
-					return fmt.Errorf("serve: error sending host unreachable answer: %w", err)
-				}
-				return fmt.Errorf("serve: error connecting to remote host: %w", err)
+				return fmt.Errorf("serve: error sending host unreachable answer: %w", err)
 			}
-			defer tcpRemoteConn.Close()
-			err = s.sendCompleted(clientMessage, clientMessage.AddressPayload, clientMessage.AddressType)
-			if err != nil {
-				return fmt.Errorf("serve: error sending completed answer: %w", err)
-			}
-			fmt.Println("Started transmitting")
-			return s.startTransmitting(tcpRemoteConn.(*net.TCPConn))
-		default:
+			return fmt.Errorf("serve: error connecting to remote host: %w", err)
 		}
-	default:
-
+		defer tcpRemoteConn.Close()
+		err = s.sendCompleted(clientMessage, clientMessage.AddressPayload, clientMessage.AddressType)
+		if err != nil {
+			return fmt.Errorf("serve: error sending completed answer: %w", err)
+		}
+		return s.startTransmitting(tcpRemoteConn.(*net.TCPConn))
+	case bindPort, associateUDPPort:
+		err = s.sendUnsupported(clientMessage)
+		if err != nil {
+			return fmt.Errorf("serve: error sending unsupported answer: %w", err)
+		}
 	}
 	return nil
 }
@@ -163,15 +158,15 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 	}
 }
 
-func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage, resolvedIP []byte, addressType byte) error {
+func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage, resolvedIP []byte, addrType addressType) error {
 	serverAnswer := socks5ServerAnswer{
-		SocksVersion:   5,
-		AnswerCode:     0,
-		AddressType:    addressType,
+		SocksVersion:   socks5,
+		AnswerCode:     requestGranted,
+		AddressType:    addrType,
 		AddressPayload: resolvedIP,
 		Port:           clientMessage.Port,
 	}
-	err := s.messageSource.writeServerAnswer(serverAnswer)
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
 		return fmt.Errorf("sendCompleted: error writing server answer: %w", err)
 	}
@@ -180,13 +175,13 @@ func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage
 
 func (s *singleConnectionServer) sendHostUnreachable(clientMessage socks5ClientMessage) error {
 	serverAnswer := socks5ServerAnswer{
-		SocksVersion:   5,
-		AnswerCode:     4,
+		SocksVersion:   socks5,
+		AnswerCode:     hostUnreachable,
 		AddressType:    clientMessage.AddressType,
 		AddressPayload: clientMessage.AddressPayload,
 		Port:           clientMessage.Port,
 	}
-	err := s.messageSource.writeServerAnswer(serverAnswer)
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
 		return fmt.Errorf("sendHostUnreachable: error writing server answer: %w", err)
 	}
@@ -195,13 +190,13 @@ func (s *singleConnectionServer) sendHostUnreachable(clientMessage socks5ClientM
 
 func (s *singleConnectionServer) sendUnsupported(clientMessage socks5ClientMessage) error {
 	serverAnswer := socks5ServerAnswer{
-		SocksVersion:   5,
-		AnswerCode:     7,
+		SocksVersion:   socks5,
+		AnswerCode:     commandNotSupported,
 		AddressType:    clientMessage.AddressType,
 		AddressPayload: clientMessage.AddressPayload,
 		Port:           clientMessage.Port,
 	}
-	err := s.messageSource.writeServerAnswer(serverAnswer)
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
 		return fmt.Errorf("sendUnsupported: error writing server answer: %w", err)
 	}
