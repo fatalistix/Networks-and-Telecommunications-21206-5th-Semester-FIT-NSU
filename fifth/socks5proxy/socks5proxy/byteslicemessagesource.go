@@ -6,21 +6,21 @@ import (
 	"slices"
 )
 
-type ByteSliceMessageSource struct {
+type byteSliceMessageSource struct {
 	reader io.Reader
 	writer io.Writer
 	buffer []byte
 }
 
-func newByteSliceMessageSource(reader io.Reader, writer io.Writer) *ByteSliceMessageSource {
-	return &ByteSliceMessageSource{
+func newByteSliceMessageSource(reader io.Reader, writer io.Writer) *byteSliceMessageSource {
+	return &byteSliceMessageSource{
 		reader: reader,
 		writer: writer,
 		buffer: make([]byte, 6+1+256),
 	}
 }
 
-func (s *ByteSliceMessageSource) readGreetingMessage() (socks5GreetingMessage, error) {
+func (s *byteSliceMessageSource) ReadGreetingMessage() (socks5GreetingMessage, error) {
 	var (
 		readBytes        int
 		totallyReadBytes = 0
@@ -54,13 +54,13 @@ func (s *ByteSliceMessageSource) readGreetingMessage() (socks5GreetingMessage, e
 	return makeMessageFromBytes(s.buffer), nil
 }
 
-func (s *ByteSliceMessageSource) writeGreetingAnswer(answer socks5GreetingAnswer) error {
+func (s *byteSliceMessageSource) WriteGreetingAnswer(answer socks5GreetingAnswer) error {
 	var (
 		totallyWroteBytes = 0
 		wroteBytes        int
 		err               error
 	)
-	s.buffer[0] = answer.SocksVersion
+	s.buffer[0] = byte(answer.SocksVersion)
 	s.buffer[1] = answer.AuthMethod
 
 	for totallyWroteBytes != 2 {
@@ -73,7 +73,7 @@ func (s *ByteSliceMessageSource) writeGreetingAnswer(answer socks5GreetingAnswer
 	return nil
 }
 
-func (s *ByteSliceMessageSource) readClientMessage() (socks5ClientMessage, error) {
+func (s *byteSliceMessageSource) ReadClientMessage() (socks5ClientMessage, error) {
 	var (
 		totallyReadBytes = 0
 		readBytes        int
@@ -89,7 +89,7 @@ func (s *ByteSliceMessageSource) readClientMessage() (socks5ClientMessage, error
 	for {
 		flag, err := clientMessageEnoughBytes(s.buffer[:totallyReadBytes])
 		if err != nil {
-			return socks5ClientMessage{}, fmt.Errorf("readClientMessage: error checking info length: %w", err)
+			return socks5ClientMessage{}, fmt.Errorf("ReadClientMessage: error checking info length: %w", err)
 		}
 		if flag {
 			break
@@ -102,56 +102,48 @@ func (s *ByteSliceMessageSource) readClientMessage() (socks5ClientMessage, error
 	}
 
 	if !correctClientMessage(s.buffer[:totallyReadBytes]) {
-		return socks5ClientMessage{}, fmt.Errorf("readClientMessage: got invalid message")
+		return socks5ClientMessage{}, fmt.Errorf("ReadClientMessage: got invalid message")
 	}
 
 	return makeClientMessageFromBytes(s.buffer[:totallyReadBytes]), nil
 }
 
-func (s *ByteSliceMessageSource) writeServerAnswer(answer socks5ServerAnswer) error {
+func (s *byteSliceMessageSource) WriteServerAnswer(answer socks5ServerAnswer) error {
 	var (
 		totallyWroteBytes = 0
 		wroteBytes        int
 		messageSize       int
 		err               error
 	)
+
+	s.buffer[0] = answer.SocksVersion.GetByte()
+	s.buffer[1] = answer.AnswerCode.GetByte()
+	s.buffer[2] = 0
+	s.buffer[3] = answer.AddressType.GetByte()
+
 	switch answer.AddressType {
-	case 1:
+	case ipv4:
 		{
-			s.buffer[0] = answer.SocksVersion
-			s.buffer[1] = answer.AnswerCode
-			s.buffer[2] = 0
-			s.buffer[3] = 1
 			copy(s.buffer[4:4+4], answer.AddressPayload)
 			s.buffer[8] = byte(answer.Port / 256)
 			s.buffer[9] = byte(answer.Port & 256)
 			messageSize = 6 + 4
 		}
-	case 3:
+	case domainName:
 		{
-			s.buffer[0] = answer.SocksVersion
-			s.buffer[1] = answer.AnswerCode
-			s.buffer[2] = 0
-			s.buffer[3] = 3
 			s.buffer[4] = byte(len(answer.AddressPayload))
 			copy(s.buffer[5:5+len(answer.AddressPayload)], answer.AddressPayload)
 			s.buffer[5+len(answer.AddressPayload)] = byte(answer.Port / 256)
 			s.buffer[5+len(answer.AddressPayload)+1] = byte(answer.Port & 256)
 			messageSize = 6 + 1 + len(answer.AddressPayload)
 		}
-	case 4:
+	case ipv6:
 		{
-			s.buffer[0] = answer.SocksVersion
-			s.buffer[1] = answer.AnswerCode
-			s.buffer[2] = 0
-			s.buffer[3] = 1
 			copy(s.buffer[4:4+16], answer.AddressPayload)
 			s.buffer[4+16] = byte(answer.Port / 256)
 			s.buffer[4+16+1] = byte(answer.Port & 256)
 			messageSize = 6 + 16
 		}
-	default:
-		panic("writeServerAnswer: unexpected address type")
 	}
 
 	for totallyWroteBytes != messageSize {
@@ -180,7 +172,7 @@ func correctGreetingMessage(info []byte) bool {
 
 func makeMessageFromBytes(info []byte) socks5GreetingMessage {
 	return socks5GreetingMessage{
-		SocksVersion:     info[0],
+		SocksVersion:     socks5,
 		NumOfAuthMethods: info[1],
 		AuthMethods:      info[2:],
 	}
@@ -229,25 +221,25 @@ func makeClientMessageFromBytes(info []byte) socks5ClientMessage {
 	switch info[3] {
 	case 1:
 		return socks5ClientMessage{
-			SocksVersion:   info[0],
-			MessageCode:    info[1],
-			AddressType:    info[3],
+			SocksVersion:   socks5,
+			MessageCode:    messageCode(info[1]),
+			AddressType:    addressType(info[3]),
 			AddressPayload: slices.Clone(info[4 : 4+4]),
 			Port:           uint16(info[8])*256 + uint16(info[9]),
 		}
 	case 3:
 		return socks5ClientMessage{
-			SocksVersion:   info[0],
-			MessageCode:    info[1],
-			AddressType:    info[3],
+			SocksVersion:   socks5,
+			MessageCode:    messageCode(info[1]),
+			AddressType:    addressType(info[3]),
 			AddressPayload: slices.Clone(info[5 : 5+info[4]]),
 			Port:           uint16(info[5+info[4]])*256 + uint16(info[5+info[4]+1]),
 		}
 	case 4:
 		return socks5ClientMessage{
-			SocksVersion:   info[0],
-			MessageCode:    info[1],
-			AddressType:    info[3],
+			SocksVersion:   socks5,
+			MessageCode:    messageCode(info[1]),
+			AddressType:    addressType(info[3]),
 			AddressPayload: slices.Clone(info[4 : 4+16]),
 			Port:           uint16(info[4+16])*256 + uint16(info[4+16+1]),
 		}
