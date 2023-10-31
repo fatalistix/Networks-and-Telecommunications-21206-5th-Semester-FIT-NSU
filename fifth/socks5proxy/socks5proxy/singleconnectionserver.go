@@ -62,7 +62,17 @@ func (s *singleConnectionServer) Serve() error {
 			return fmt.Errorf("serve: error connecting to remote host: %w", err)
 		}
 		defer tcpRemoteConn.Close()
-		err = s.sendCompleted(clientMessage, clientMessage.AddressPayload, clientMessage.AddressType)
+		var serverIP []byte
+		var addrType addressType
+		if tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To4() == nil {
+			serverIP = tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To16()
+			addrType = ipv6
+		} else {
+			serverIP = tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To4()
+			addrType = ipv4
+		}
+
+		err = s.sendCompleted(clientMessage, serverIP, addrType, uint16(tcpRemoteConn.LocalAddr().(*net.TCPAddr).Port))
 		if err != nil {
 			return fmt.Errorf("serve: error sending completed answer: %w", err)
 		}
@@ -158,13 +168,13 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 	}
 }
 
-func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage, resolvedIP []byte, addrType addressType) error {
+func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage, serverIP []byte, addrType addressType, port uint16) error {
 	serverAnswer := socks5ServerAnswer{
 		SocksVersion:   socks5,
 		AnswerCode:     requestGranted,
 		AddressType:    addrType,
-		AddressPayload: resolvedIP,
-		Port:           clientMessage.Port,
+		AddressPayload: serverIP,
+		Port:           port,
 	}
 	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
