@@ -49,10 +49,7 @@ func (s *Socks5Proxy) Serve() error {
 			return fmt.Errorf("serve: failed to listen for TCP connection: %w", err)
 		}
 
-		fmt.Println("new connection")
-
 		go func() {
-			fmt.Println("new server")
 			server := newSingleConnectionServer(tcpConn)
 			s.closers[server] = true
 			err = server.Serve()
