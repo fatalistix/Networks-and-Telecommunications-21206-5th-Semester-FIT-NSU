@@ -8,18 +8,27 @@ import (
 	"sync"
 )
 
+type Statser interface {
+	Stats() (StatsResult, StatsResult, error)
+}
+
+type StatsCloser interface {
+	Statser
+	io.Closer
+}
+
 type Socks5Proxy struct {
-	listenTCPAddr *net.TCPAddr
-	tcpListener   *net.TCPListener
-	closers       map[io.Closer]bool
-	closed        bool
-	closersMutex  sync.Mutex
+	listenTCPAddr     *net.TCPAddr
+	tcpListener       *net.TCPListener
+	statsClosers      map[StatsCloser]bool
+	closed            bool
+	statsClosersMutex sync.Mutex
 }
 
 func NewSocks5Proxy() *Socks5Proxy {
 	return &Socks5Proxy{
-		closers: make(map[io.Closer]bool),
-		closed:  false,
+		statsClosers: make(map[StatsCloser]bool),
+		closed:       false,
 	}
 }
 
@@ -53,18 +62,31 @@ func (s *Socks5Proxy) Serve() error {
 
 		go func() {
 			server := newSingleConnectionServer(tcpConn)
-			s.closersMutex.Lock()
-			s.closers[server] = true
-			s.closersMutex.Unlock()
+			s.statsClosersMutex.Lock()
+			s.statsClosers[server] = true
+			s.statsClosersMutex.Unlock()
 			err = server.Serve()
-			s.closersMutex.Lock()
-			delete(s.closers, server)
-			s.closersMutex.Unlock()
+			s.statsClosersMutex.Lock()
+			delete(s.statsClosers, server)
+			s.statsClosersMutex.Unlock()
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 		}()
 	}
+}
+
+func (s *Socks5Proxy) Stats() []StatsResult {
+	s.statsClosersMutex.Lock()
+	result := make([]StatsResult, 0, len(s.statsClosers)*2)
+	for k := range s.statsClosers {
+		clientRes, remoteRes, err := k.Stats()
+		if err != nil {
+			result = append(result, clientRes, remoteRes)
+		}
+	}
+	s.statsClosersMutex.Unlock()
+	return result
 }
 
 func (s *Socks5Proxy) Close() error {
@@ -73,10 +95,10 @@ func (s *Socks5Proxy) Close() error {
 	if err != nil {
 		return fmt.Errorf("close: error closing tcp listener: %w", err)
 	}
-	s.closersMutex.Lock()
-	for k := range s.closers {
+	s.statsClosersMutex.Lock()
+	for k := range s.statsClosers {
 		_ = k.Close()
 	}
-	s.closersMutex.Unlock()
+	s.statsClosersMutex.Unlock()
 	return nil
 }
