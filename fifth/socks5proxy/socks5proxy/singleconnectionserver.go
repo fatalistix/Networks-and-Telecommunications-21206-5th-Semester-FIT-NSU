@@ -19,14 +19,19 @@ type singleConnectionServer struct {
 	messageSource messageSource
 	timeout       time.Duration
 	tcpClientConn *net.TCPConn
+	clientStats   *connectionStats
+	remoteStats   *connectionStats
 }
 
 func newSingleConnectionServer(tcpClientConn *net.TCPConn) *singleConnectionServer {
-	return &singleConnectionServer{
+	server := singleConnectionServer{
 		messageSource: newByteSliceMessageSource(tcpClientConn, tcpClientConn),
 		timeout:       time.Second * 10,
 		tcpClientConn: tcpClientConn,
+		clientStats:   nil,
+		remoteStats:   nil,
 	}
+	return &server
 }
 
 func (s *singleConnectionServer) Serve() error {
@@ -72,7 +77,7 @@ func (s *singleConnectionServer) Serve() error {
 			addrType = ipv4
 		}
 
-		err = s.sendCompleted(clientMessage, serverIP, addrType, uint16(tcpRemoteConn.LocalAddr().(*net.TCPAddr).Port))
+		err = s.sendCompleted(serverIP, addrType, uint16(tcpRemoteConn.LocalAddr().(*net.TCPAddr).Port))
 		if err != nil {
 			return fmt.Errorf("serve: error sending completed answer: %w", err)
 		}
@@ -94,6 +99,14 @@ func (s *singleConnectionServer) Close() error {
 	return nil
 }
 
+func (s *singleConnectionServer) Stats() (StatsResult, StatsResult, error) {
+	if s.clientStats == nil || s.remoteStats == nil {
+		return StatsResult{}, StatsResult{}, fmt.Errorf("no stats available")
+	} else {
+		return s.clientStats.Stats(), s.remoteStats.Stats(), nil
+	}
+}
+
 func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) error {
 	clientBuffer := make([]byte, 1400)
 	remoteBuffer := make([]byte, 1400)
@@ -109,10 +122,18 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 		clientErr               error
 		waitingChan             chan bool
 	)
+	s.remoteStats = newConnectionStats(
+		tcpRemoteConn.RemoteAddr().(*net.TCPAddr).IP,
+		uint16(tcpRemoteConn.RemoteAddr().(*net.TCPAddr).Port),
+	)
+	s.clientStats = newConnectionStats(
+		tcpRemoteConn.RemoteAddr().(*net.TCPAddr).IP,
+		uint16(tcpRemoteConn.RemoteAddr().(*net.TCPAddr).Port),
+	)
 
 	go func() {
+
 		for {
-			remoteTotallyWroteBytes = 0
 			remoteReadBytes, remoteErr = tcpRemoteConn.Read(remoteBuffer)
 			if remoteErr != nil {
 				_ = s.tcpClientConn.Close()
@@ -121,21 +142,26 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 				}
 				break
 			}
-			for remoteTotallyWroteBytes != remoteReadBytes {
-				remoteWroteBytes, remoteErr = s.tcpClientConn.Write(remoteBuffer[remoteTotallyWroteBytes:remoteReadBytes])
+			s.remoteStats.AddReadBytes(uint64(remoteReadBytes))
+
+			clientTotallyWroteBytes = 0
+			for clientTotallyWroteBytes != remoteReadBytes {
+				clientWroteBytes, remoteErr = s.tcpClientConn.Write(remoteBuffer[clientTotallyWroteBytes:remoteReadBytes])
 				if remoteErr != nil {
 					remoteErr = fmt.Errorf("client connection: error writing: %w", remoteErr)
 					_ = s.tcpClientConn.Close()
 					break
 				}
-				remoteTotallyWroteBytes += remoteWroteBytes
+				clientTotallyWroteBytes += clientWroteBytes
+				s.clientStats.AddWroteBytes(uint64(clientWroteBytes))
 			}
 		}
 		waitingChan <- true
 	}()
 
+	s.clientStats.startTime = time.Now()
+
 	for {
-		clientTotallyWroteBytes = 0
 		clientReadBytes, clientErr = s.tcpClientConn.Read(clientBuffer)
 		if clientErr != nil {
 			_ = tcpRemoteConn.Close()
@@ -144,8 +170,11 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 			}
 			break
 		}
-		for clientTotallyWroteBytes != clientReadBytes {
-			clientWroteBytes, clientErr = tcpRemoteConn.Write(clientBuffer[clientTotallyWroteBytes:clientReadBytes])
+		s.clientStats.AddReadBytes(uint64(clientReadBytes))
+
+		remoteTotallyWroteBytes = 0
+		for remoteTotallyWroteBytes != clientReadBytes {
+			remoteWroteBytes, clientErr = tcpRemoteConn.Write(clientBuffer[remoteTotallyWroteBytes:clientReadBytes])
 			if clientErr != nil {
 				_ = tcpRemoteConn.Close()
 				if clientErr != io.EOF {
@@ -153,7 +182,8 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 				}
 				break
 			}
-			clientTotallyWroteBytes += clientWroteBytes
+			remoteTotallyWroteBytes += remoteWroteBytes
+			s.remoteStats.AddWroteBytes(uint64(remoteWroteBytes))
 		}
 	}
 	<-waitingChan
@@ -168,7 +198,7 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 	}
 }
 
-func (s *singleConnectionServer) sendCompleted(clientMessage socks5ClientMessage, serverIP []byte, addrType addressType, port uint16) error {
+func (s *singleConnectionServer) sendCompleted(serverIP []byte, addrType addressType, port uint16) error {
 	serverAnswer := socks5ServerAnswer{
 		SocksVersion:   socks5,
 		AnswerCode:     requestGranted,
