@@ -1,6 +1,7 @@
 package socks5proxy
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -21,14 +22,12 @@ type Socks5Proxy struct {
 	listenTCPAddr     *net.TCPAddr
 	tcpListener       *net.TCPListener
 	statsClosers      map[StatsCloser]bool
-	closed            bool
 	statsClosersMutex sync.Mutex
 }
 
 func NewSocks5Proxy() *Socks5Proxy {
 	return &Socks5Proxy{
 		statsClosers: make(map[StatsCloser]bool),
-		closed:       false,
 	}
 }
 
@@ -37,12 +36,12 @@ func (s *Socks5Proxy) Open(port uint16) error {
 
 	s.listenTCPAddr, err = net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		return fmt.Errorf("open: failed to resolve TCP address: %w", err)
+		return fmt.Errorf("open: %w", err)
 	}
 
 	s.tcpListener, err = net.ListenTCP("tcp", s.listenTCPAddr)
 	if err != nil {
-		return fmt.Errorf("open: failed to start listening on TCP: %w", err)
+		return fmt.Errorf("open: %w", err)
 	}
 
 	return nil
@@ -54,10 +53,10 @@ func (s *Socks5Proxy) Serve() error {
 	for {
 		tcpConn, err := s.tcpListener.AcceptTCP()
 		if err != nil {
-			if s.closed {
+			if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
-			return fmt.Errorf("serve: failed to listen for TCP connection: %w", err)
+			return fmt.Errorf("serve: %w", err)
 		}
 
 		go func() {
@@ -70,19 +69,27 @@ func (s *Socks5Proxy) Serve() error {
 			delete(s.statsClosers, server)
 			s.statsClosersMutex.Unlock()
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println("serving coroutine:", err.Error())
 			}
 		}()
 	}
 }
 
-func (s *Socks5Proxy) Stats() []StatsResult {
+type StatsResultPair struct {
+	Client StatsResult
+	Remote StatsResult
+}
+
+func (s *Socks5Proxy) Stats() []StatsResultPair {
 	s.statsClosersMutex.Lock()
-	result := make([]StatsResult, 0, len(s.statsClosers)*2)
+	result := make([]StatsResultPair, 0, len(s.statsClosers))
 	for k := range s.statsClosers {
 		clientRes, remoteRes, err := k.Stats()
 		if err == nil {
-			result = append(result, clientRes, remoteRes)
+			result = append(result, StatsResultPair{
+				Client: clientRes,
+				Remote: remoteRes,
+			})
 		}
 	}
 	s.statsClosersMutex.Unlock()
@@ -90,7 +97,6 @@ func (s *Socks5Proxy) Stats() []StatsResult {
 }
 
 func (s *Socks5Proxy) Close() error {
-	s.closed = true
 	err := s.tcpListener.Close()
 	if err != nil {
 		return fmt.Errorf("close: error closing tcp listener: %w", err)
