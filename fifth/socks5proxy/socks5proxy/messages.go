@@ -1,5 +1,9 @@
 package socks5proxy
 
+import "errors"
+
+var errProtocol = errors.New("protocol error")
+
 type socksVersion byte
 type messageCode byte
 type addressType byte
