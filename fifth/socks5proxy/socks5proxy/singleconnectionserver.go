@@ -1,10 +1,12 @@
 package socks5proxy
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -40,52 +42,34 @@ func (s *singleConnectionServer) Serve() error {
 	var err error
 
 	_, err = s.messageSource.ReadGreetingMessage()
+	err = s.handleMessageSourceError(err)
 	if err != nil {
-		return fmt.Errorf("serve: error reading greeting message: %w", err)
+		return fmt.Errorf("serve: %w", err)
 	}
 
 	greetingAnswer := socks5GreetingAnswer{SocksVersion: socks5, AuthMethod: 0}
 	err = s.messageSource.WriteGreetingAnswer(greetingAnswer)
 	if err != nil {
-		return fmt.Errorf("serve: error writing greeting answer: %w", err)
+		return fmt.Errorf("serve: %w", err)
 	}
 
 	var clientMessage socks5ClientMessage
 	clientMessage, err = s.messageSource.ReadClientMessage()
+	err = s.handleMessageSourceError(err)
 	if err != nil {
-		return fmt.Errorf("serve: error reading client message: %w", err)
+		return fmt.Errorf("serve: %w", err)
 	}
 
 	switch clientMessage.MessageCode {
 	case establishTCP:
-		tcpRemoteConn, err := net.DialTimeout("tcp", string(clientMessage.AddressPayload)+":"+strconv.Itoa(int(clientMessage.Port)), s.timeout)
+		err = s.establishTCP(clientMessage)
 		if err != nil {
-			sendHostUnreachableErr := s.sendHostUnreachable(clientMessage)
-			if sendHostUnreachableErr != nil {
-				return fmt.Errorf("serve: error sending host unreachable answer: %w", sendHostUnreachableErr)
-			}
-			return fmt.Errorf("serve: error connecting to remote host: %w", err)
+			return fmt.Errorf("serve: %w", err)
 		}
-		defer tcpRemoteConn.Close()
-		var serverIP []byte
-		var addrType addressType
-		if tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To4() == nil {
-			serverIP = tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To16()
-			addrType = ipv6
-		} else {
-			serverIP = tcpRemoteConn.LocalAddr().(*net.TCPAddr).IP.To4()
-			addrType = ipv4
-		}
-
-		err = s.sendCompleted(serverIP, addrType, uint16(tcpRemoteConn.LocalAddr().(*net.TCPAddr).Port))
-		if err != nil {
-			return fmt.Errorf("serve: error sending completed answer: %w", err)
-		}
-		return s.startTransmitting(tcpRemoteConn.(*net.TCPConn))
 	case bindPort, associateUDPPort:
 		err = s.sendUnsupported(clientMessage)
 		if err != nil {
-			return fmt.Errorf("serve: error sending unsupported answer: %w", err)
+			return fmt.Errorf("serve: %w", err)
 		}
 	}
 	return nil
@@ -94,17 +78,74 @@ func (s *singleConnectionServer) Serve() error {
 func (s *singleConnectionServer) Close() error {
 	err := s.tcpClientConn.Close()
 	if err != nil {
-		return fmt.Errorf("close: error closing client tcp connection: %w", err)
+		return fmt.Errorf("close: %w", err)
 	}
 	return nil
 }
 
 func (s *singleConnectionServer) Stats() (StatsResult, StatsResult, error) {
 	if s.clientStats == nil || s.remoteStats == nil {
-		return StatsResult{}, StatsResult{}, fmt.Errorf("no stats available")
+		return StatsResult{}, StatsResult{}, fmt.Errorf("stats: no stats available")
 	} else {
 		return s.clientStats.Stats(), s.remoteStats.Stats(), nil
 	}
+}
+
+func (s *singleConnectionServer) handleMessageSourceError(err error) error {
+	if err != nil {
+		if errors.Is(err, errProtocol) {
+			sendErr := s.sendProtocolError()
+			if sendErr != nil {
+				return fmt.Errorf("handle message source error: on %w - %w", err, sendErr)
+			}
+			return fmt.Errorf("handle message source error: %w", err)
+		}
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) establishTCP(clientMessage socks5ClientMessage) error {
+	tcpRemoteConn, err := net.DialTimeout("tcp", string(clientMessage.AddressPayload)+":"+strconv.Itoa(int(clientMessage.Port)), s.timeout)
+	err = s.handleDialTimeoutError(err, clientMessage)
+	if err != nil {
+		return fmt.Errorf("establish tcp: %w", err)
+	}
+
+	defer tcpRemoteConn.Close()
+
+	addrType, serverIP, port := tcpLocalAddrInfo(tcpRemoteConn.(*net.TCPConn))
+
+	err = s.sendRequestGranted(serverIP, addrType, port)
+	if err != nil {
+		return fmt.Errorf("serve: error sending completed answer: %w", err)
+	}
+	err = s.startTransmitting(tcpRemoteConn.(*net.TCPConn))
+	if err != nil {
+		return fmt.Errorf("establish tcp: %w", err)
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) handleDialTimeoutError(err error, clientMessage socks5ClientMessage) error {
+	if err != nil {
+		var sendErr error
+		if errors.Is(err, syscall.EPERM) {
+			sendErr = s.sendConnNotAllowed(clientMessage)
+		} else if errors.Is(err, syscall.ENETUNREACH) {
+			sendErr = s.sendNetworkUnreachable(clientMessage)
+		} else if errors.Is(err, syscall.EHOSTUNREACH) || err.(net.Error).Timeout() {
+			sendErr = s.sendHostUnreachable(clientMessage)
+		} else if errors.Is(err, syscall.ECONNREFUSED) {
+			sendErr = s.sendConnectionRefused(clientMessage)
+		} else {
+			sendErr = s.sendGeneralFailure(clientMessage.AddressPayload, clientMessage.AddressType, clientMessage.Port)
+		}
+		if sendErr != nil {
+			return fmt.Errorf("handle dial timeout error: on %w - %w", err, sendErr)
+		}
+		return fmt.Errorf("handle dial timeout error: %w", err)
+	}
+	return nil
 }
 
 func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) error {
@@ -120,10 +161,8 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 		clientWroteBytes        int
 		clientReadBytes         int
 		clientErr               error
-		waitingChan             chan bool
+		waitingChan             = make(chan bool)
 	)
-
-	waitingChan = make(chan bool)
 
 	s.remoteStats = newConnectionStats(
 		tcpRemoteConn.RemoteAddr().(*net.TCPAddr).IP,
@@ -140,9 +179,7 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 			remoteReadBytes, remoteErr = tcpRemoteConn.Read(remoteBuffer)
 			if remoteErr != nil {
 				_ = s.tcpClientConn.Close()
-				if remoteErr != io.EOF {
-					remoteErr = fmt.Errorf("remote connection: error reading: %w", remoteErr)
-				}
+				remoteErr = fmt.Errorf("remote connection: %w", remoteErr)
 				break
 			}
 			s.remoteStats.AddReadBytes(uint64(remoteReadBytes))
@@ -151,8 +188,8 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 			for clientTotallyWroteBytes != remoteReadBytes {
 				clientWroteBytes, remoteErr = s.tcpClientConn.Write(remoteBuffer[clientTotallyWroteBytes:remoteReadBytes])
 				if remoteErr != nil {
-					remoteErr = fmt.Errorf("client connection: error writing: %w", remoteErr)
 					_ = s.tcpClientConn.Close()
+					remoteErr = fmt.Errorf("client connection: %w", remoteErr)
 					break
 				}
 				clientTotallyWroteBytes += clientWroteBytes
@@ -168,9 +205,7 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 		clientReadBytes, clientErr = s.tcpClientConn.Read(clientBuffer)
 		if clientErr != nil {
 			_ = tcpRemoteConn.Close()
-			if clientErr != io.EOF {
-				clientErr = fmt.Errorf("client connection: error reading: %w", remoteErr)
-			}
+			clientErr = fmt.Errorf("client connection: error reading: %w", clientErr)
 			break
 		}
 		s.clientStats.AddReadBytes(uint64(clientReadBytes))
@@ -180,9 +215,7 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 			remoteWroteBytes, clientErr = tcpRemoteConn.Write(clientBuffer[remoteTotallyWroteBytes:clientReadBytes])
 			if clientErr != nil {
 				_ = tcpRemoteConn.Close()
-				if clientErr != io.EOF {
-					clientErr = fmt.Errorf("remote connection: error writing: %w", clientErr)
-				}
+				clientErr = fmt.Errorf("remote connection: error writing: %w", clientErr)
 				break
 			}
 			remoteTotallyWroteBytes += remoteWroteBytes
@@ -190,18 +223,22 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 		}
 	}
 	<-waitingChan
-	if clientErr == io.EOF && remoteErr == io.EOF {
+
+	isExpectedClientErr := errors.Is(clientErr, io.EOF) || errors.Is(clientErr, net.ErrClosed) || (clientErr == nil)
+	isExpectedRemoteErr := errors.Is(remoteErr, io.EOF) || errors.Is(remoteErr, net.ErrClosed) || (remoteErr == nil)
+
+	if isExpectedClientErr && isExpectedRemoteErr {
 		return nil
-	} else if clientErr != io.EOF && remoteErr == io.EOF {
+	} else if !isExpectedClientErr && isExpectedRemoteErr {
 		return fmt.Errorf("startTransmitting: %w", clientErr)
-	} else if clientErr == io.EOF && remoteErr != io.EOF {
+	} else if isExpectedClientErr && !isExpectedRemoteErr {
 		return fmt.Errorf("startTransmitting: %w", remoteErr)
 	} else {
 		return fmt.Errorf("startTransmitting: both coroutines finished with errors (%w) and (%w)", clientErr, remoteErr)
 	}
 }
 
-func (s *singleConnectionServer) sendCompleted(serverIP []byte, addrType addressType, port uint16) error {
+func (s *singleConnectionServer) sendRequestGranted(serverIP []byte, addrType addressType, port uint16) error {
 	serverAnswer := socks5ServerAnswer{
 		SocksVersion:   socks5,
 		AnswerCode:     requestGranted,
@@ -211,7 +248,52 @@ func (s *singleConnectionServer) sendCompleted(serverIP []byte, addrType address
 	}
 	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
-		return fmt.Errorf("sendCompleted: error writing server answer: %w", err)
+		return fmt.Errorf("send request granted: %w", err)
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) sendGeneralFailure(serverIP []byte, addrType addressType, port uint16) error {
+	serverAnswer := socks5ServerAnswer{
+		SocksVersion:   socks5,
+		AnswerCode:     generalFailure,
+		AddressType:    addrType,
+		AddressPayload: serverIP,
+		Port:           port,
+	}
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
+	if err != nil {
+		return fmt.Errorf("send general failure: %w", err)
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) sendConnNotAllowed(clientMessage socks5ClientMessage) error {
+	serverAnswer := socks5ServerAnswer{
+		SocksVersion:   socks5,
+		AnswerCode:     notAllowedByRuleset,
+		AddressType:    clientMessage.AddressType,
+		AddressPayload: clientMessage.AddressPayload,
+		Port:           clientMessage.Port,
+	}
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
+	if err != nil {
+		return fmt.Errorf("send connection not allowed: %w", err)
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) sendNetworkUnreachable(clientMessage socks5ClientMessage) error {
+	serverAnswer := socks5ServerAnswer{
+		SocksVersion:   socks5,
+		AnswerCode:     networkUnreachable,
+		AddressType:    clientMessage.AddressType,
+		AddressPayload: clientMessage.AddressPayload,
+		Port:           clientMessage.Port,
+	}
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
+	if err != nil {
+		return fmt.Errorf("send network unreachable: %w", err)
 	}
 	return nil
 }
@@ -226,7 +308,22 @@ func (s *singleConnectionServer) sendHostUnreachable(clientMessage socks5ClientM
 	}
 	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
-		return fmt.Errorf("sendHostUnreachable: error writing server answer: %w", err)
+		return fmt.Errorf("send host unreachable: %w", err)
+	}
+	return nil
+}
+
+func (s *singleConnectionServer) sendConnectionRefused(clientMessage socks5ClientMessage) error {
+	serverAnswer := socks5ServerAnswer{
+		SocksVersion:   socks5,
+		AnswerCode:     connectionRefusedByDestinationHost,
+		AddressType:    clientMessage.AddressType,
+		AddressPayload: clientMessage.AddressPayload,
+		Port:           clientMessage.Port,
+	}
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
+	if err != nil {
+		return fmt.Errorf("send connection refused: %w", err)
 	}
 	return nil
 }
@@ -241,7 +338,37 @@ func (s *singleConnectionServer) sendUnsupported(clientMessage socks5ClientMessa
 	}
 	err := s.messageSource.WriteServerAnswer(serverAnswer)
 	if err != nil {
-		return fmt.Errorf("sendUnsupported: error writing server answer: %w", err)
+		return fmt.Errorf("send unsupported: %w", err)
 	}
 	return nil
+}
+
+func (s *singleConnectionServer) sendProtocolError() error {
+	addrType, ip, port := tcpLocalAddrInfo(s.tcpClientConn)
+	serverAnswer := socks5ServerAnswer{
+		SocksVersion:   socks5,
+		AnswerCode:     protocolError,
+		AddressType:    addrType,
+		AddressPayload: ip,
+		Port:           port,
+	}
+	err := s.messageSource.WriteServerAnswer(serverAnswer)
+	if err != nil {
+		return fmt.Errorf("send protocol error: %w", err)
+	}
+	return nil
+}
+
+func tcpLocalAddrInfo(conn *net.TCPConn) (addressType, []byte, uint16) {
+	var serverIP []byte
+	var addrType addressType
+	tcpAddr := conn.LocalAddr().(*net.TCPAddr)
+	if tcpAddr.IP.To4() == nil {
+		serverIP = tcpAddr.IP.To16()
+		addrType = ipv6
+	} else {
+		serverIP = tcpAddr.IP.To4()
+		addrType = ipv4
+	}
+	return addrType, serverIP, uint16(tcpAddr.Port)
 }
