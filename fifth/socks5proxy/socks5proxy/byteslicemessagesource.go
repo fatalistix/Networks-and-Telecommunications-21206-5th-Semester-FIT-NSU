@@ -29,20 +29,20 @@ func (s *byteSliceMessageSource) ReadGreetingMessage() (socks5GreetingMessage, e
 
 	readBytes, err = s.reader.Read(s.buffer)
 	if err != nil {
-		return socks5GreetingMessage{}, fmt.Errorf("getGreetingMessage: error reading: %w", err)
+		return socks5GreetingMessage{}, fmt.Errorf("get greeting message: %w", err)
 	}
 	totallyReadBytes += readBytes
 
 	for !greetingMessageEnoughBytes(s.buffer[:totallyReadBytes]) {
 		readBytes, err = s.reader.Read(s.buffer[totallyReadBytes:])
 		if err != nil {
-			return socks5GreetingMessage{}, fmt.Errorf("getGreetingMessage: error reading: %w", err)
+			return socks5GreetingMessage{}, fmt.Errorf("get greeting message: %w", err)
 		}
 		totallyReadBytes += readBytes
 	}
 
 	if !correctGreetingMessage(s.buffer[:totallyReadBytes]) {
-		return socks5GreetingMessage{}, fmt.Errorf("getGreetingMessage: recieved invalid greeting message")
+		return socks5GreetingMessage{}, fmt.Errorf("get greeting message: %w", errProtocol)
 	}
 
 	return makeMessageFromBytes(s.buffer), nil
@@ -60,7 +60,7 @@ func (s *byteSliceMessageSource) WriteGreetingAnswer(answer socks5GreetingAnswer
 	for totallyWroteBytes != 2 {
 		wroteBytes, err = s.writer.Write(s.buffer[totallyWroteBytes:2])
 		if err != nil {
-			return fmt.Errorf("writeGreetingAnswer: error writing: %w", err)
+			return fmt.Errorf("write greeting answer: %w", err)
 		}
 		totallyWroteBytes += wroteBytes
 	}
@@ -76,27 +76,27 @@ func (s *byteSliceMessageSource) ReadClientMessage() (socks5ClientMessage, error
 
 	readBytes, err = s.reader.Read(s.buffer)
 	if err != nil {
-		return socks5ClientMessage{}, fmt.Errorf("readMessage: error reading: %w", err)
+		return socks5ClientMessage{}, fmt.Errorf("read client message: %w", err)
 	}
 	totallyReadBytes += readBytes
 
 	for {
 		flag, err := clientMessageEnoughBytes(s.buffer[:totallyReadBytes])
 		if err != nil {
-			return socks5ClientMessage{}, fmt.Errorf("ReadClientMessage: error checking info length: %w", err)
+			return socks5ClientMessage{}, fmt.Errorf("read client message: %w", err)
 		}
 		if flag {
 			break
 		}
 		readBytes, err = s.reader.Read(s.buffer)
 		if err != nil {
-			return socks5ClientMessage{}, fmt.Errorf("readMessage: error reading: %w", err)
+			return socks5ClientMessage{}, fmt.Errorf("read client message: %w", err)
 		}
 		totallyReadBytes += readBytes
 	}
 
 	if !correctClientMessage(s.buffer[:totallyReadBytes]) {
-		return socks5ClientMessage{}, fmt.Errorf("ReadClientMessage: got invalid message")
+		return socks5ClientMessage{}, fmt.Errorf("read client message: %w", errProtocol)
 	}
 
 	return makeClientMessageFromBytes(s.buffer[:totallyReadBytes]), nil
@@ -143,7 +143,7 @@ func (s *byteSliceMessageSource) WriteServerAnswer(answer socks5ServerAnswer) er
 	for totallyWroteBytes != messageSize {
 		wroteBytes, err = s.writer.Write(s.buffer[totallyWroteBytes:messageSize])
 		if err != nil {
-			return fmt.Errorf("writeServerAnswer: error writing: %w", err)
+			return fmt.Errorf("write server answer: %w", err)
 		}
 		totallyWroteBytes += wroteBytes
 	}
@@ -185,7 +185,7 @@ func clientMessageEnoughBytes(info []byte) (bool, error) {
 	case 4:
 		return len(info) >= 6+16, nil
 	default:
-		return false, fmt.Errorf("clientMessageEnoughBytes: invalid message format: expected 0x01, 0x03 or 0x04 at 4-th byte, but got %v", info[3])
+		return false, fmt.Errorf("client message enough bytes: invalid message format: expected 0x01, 0x03 or 0x04 at 4-th byte, but got %v: %w", info[3], errProtocol)
 	}
 }
 
@@ -238,6 +238,6 @@ func makeClientMessageFromBytes(info []byte) socks5ClientMessage {
 			Port:           uint16(info[4+16])*256 + uint16(info[4+16+1]),
 		}
 	default:
-		panic("makeClientMessageFromBytes: unexpected address type")
+		panic("make client message from bytes: unexpected address type")
 	}
 }
