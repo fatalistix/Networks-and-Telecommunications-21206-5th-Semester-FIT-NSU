@@ -60,9 +60,9 @@ func (s *singleConnectionServer) Serve() error {
 	case establishTCP:
 		tcpRemoteConn, err := net.DialTimeout("tcp", string(clientMessage.AddressPayload)+":"+strconv.Itoa(int(clientMessage.Port)), s.timeout)
 		if err != nil {
-			err = s.sendHostUnreachable(clientMessage)
-			if err != nil {
-				return fmt.Errorf("serve: error sending host unreachable answer: %w", err)
+			sendHostUnreachableErr := s.sendHostUnreachable(clientMessage)
+			if sendHostUnreachableErr != nil {
+				return fmt.Errorf("serve: error sending host unreachable answer: %w", sendHostUnreachableErr)
 			}
 			return fmt.Errorf("serve: error connecting to remote host: %w", err)
 		}
@@ -122,13 +122,16 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 		clientErr               error
 		waitingChan             chan bool
 	)
+
+	waitingChan = make(chan bool)
+
 	s.remoteStats = newConnectionStats(
 		tcpRemoteConn.RemoteAddr().(*net.TCPAddr).IP,
 		uint16(tcpRemoteConn.RemoteAddr().(*net.TCPAddr).Port),
 	)
 	s.clientStats = newConnectionStats(
-		tcpRemoteConn.RemoteAddr().(*net.TCPAddr).IP,
-		uint16(tcpRemoteConn.RemoteAddr().(*net.TCPAddr).Port),
+		s.tcpClientConn.RemoteAddr().(*net.TCPAddr).IP,
+		uint16(s.tcpClientConn.RemoteAddr().(*net.TCPAddr).Port),
 	)
 
 	go func() {
