@@ -81,7 +81,7 @@ func (s *Socks5Proxy) Stats() []StatsResult {
 	result := make([]StatsResult, 0, len(s.statsClosers)*2)
 	for k := range s.statsClosers {
 		clientRes, remoteRes, err := k.Stats()
-		if err != nil {
+		if err == nil {
 			result = append(result, clientRes, remoteRes)
 		}
 	}
