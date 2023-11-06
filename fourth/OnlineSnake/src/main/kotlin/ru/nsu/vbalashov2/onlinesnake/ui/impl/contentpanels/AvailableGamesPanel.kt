@@ -1,15 +1,11 @@
-package ru.nsu.vbalashov2.onlinesnake.ui
+package ru.nsu.vbalashov2.onlinesnake.ui.contentpanels
 
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.GridLayout
-import javax.swing.BoxLayout
 import javax.swing.JButton
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.JTable
-import javax.swing.ScrollPaneLayout
-import javax.swing.table.TableColumn
 
 //    private val columnNames = arrayOf("Owner", "#", "Size", "Food", "Enter")
 //    private val availableGamesTable = JTable(arrayOf(arrayOf("1", "2", "3", "4", "5")), columnNames)

@@ -1,4 +1,4 @@
-package ru.nsu.vbalashov2.onlinesnake.ui
+package ru.nsu.vbalashov2.onlinesnake.ui.contentpanels
 
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout

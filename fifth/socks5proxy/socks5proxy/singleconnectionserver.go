@@ -174,6 +174,7 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 	)
 
 	go func() {
+		stopped := false
 
 		for {
 			remoteReadBytes, remoteErr = tcpRemoteConn.Read(remoteBuffer)
@@ -190,16 +191,20 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 				if remoteErr != nil {
 					_ = s.tcpClientConn.Close()
 					remoteErr = fmt.Errorf("client connection: %w", remoteErr)
+					stopped = true
 					break
 				}
 				clientTotallyWroteBytes += clientWroteBytes
 				s.clientStats.AddWroteBytes(uint64(clientWroteBytes))
 			}
+			if stopped {
+				break
+			}
 		}
 		waitingChan <- true
 	}()
 
-	s.clientStats.startTime = time.Now()
+	stopped := false
 
 	for {
 		clientReadBytes, clientErr = s.tcpClientConn.Read(clientBuffer)
@@ -216,10 +221,14 @@ func (s *singleConnectionServer) startTransmitting(tcpRemoteConn *net.TCPConn) e
 			if clientErr != nil {
 				_ = tcpRemoteConn.Close()
 				clientErr = fmt.Errorf("remote connection: error writing: %w", clientErr)
+				stopped = true
 				break
 			}
 			remoteTotallyWroteBytes += remoteWroteBytes
 			s.remoteStats.AddWroteBytes(uint64(remoteWroteBytes))
+		}
+		if stopped {
+			break
 		}
 	}
 	<-waitingChan
