@@ -1,7 +1,6 @@
-package ru.nsu.vbalashov2.onlinesnake.directionsource
-
-import ru.nsu.vbalashov2.onlinesnake.model.gamefield.Direction
+package ru.nsu.vbalashov2.onlinesnake.model
 
 interface DirectionSource {
     val direction: Direction
+    val initDirection: Direction
 }
