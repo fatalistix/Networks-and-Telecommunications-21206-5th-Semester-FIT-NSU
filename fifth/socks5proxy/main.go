@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"runtime"
 	"socks5proxy/socks5proxy"
+	"time"
 )
 
 func main() {
@@ -19,70 +21,44 @@ func main() {
 		log.Fatal("main: error opening proxy on port ", port, ": ", err.Error())
 	}
 
-	err = proxy.Serve()
+	go func() {
+		err = proxy.Serve()
+		if err != nil {
+			log.Fatal("main: error proxy's serve: ", err.Error())
+		}
+	}()
+
+	//ticker := time.NewTicker(time.Second)
+	//mbDivider := float64(1024 * 1024)
+	//for range ticker.C {
+	//	result := proxy.Stats()
+	//	//fmt.Println("<==> UPDATING INFO ", len(result), " <==>")
+	//	var sumAverageReadSpeedMB float64
+	//	var sumAverageWriteSpeedMB float64
+	//	var sumMomentReadSpeedMB float64
+	//	var sumMomentWriteSpeedMB float64
+	//	for _, v := range result {
+	//		now := time.Now()
+	//		averageReadSpeedMB := float64(v.ReadBytes) / now.Sub(v.StartTime).Seconds() / mbDivider
+	//		averageWriteSpeedMB := float64(v.WroteBytes) / now.Sub(v.StartTime).Seconds() / mbDivider
+	//		momentReadSpeedMB := float64(v.ReadSinceLastStats) / now.Sub(v.LastStatsTime).Seconds() / mbDivider
+	//		momentWriteSpeedMB := float64(v.WroteSinceLastStats) / now.Sub(v.LastStatsTime).Seconds() / mbDivider
+	//		sumAverageReadSpeedMB += averageReadSpeedMB
+	//		sumAverageWriteSpeedMB += averageWriteSpeedMB
+	//		sumMomentReadSpeedMB += momentReadSpeedMB
+	//		sumMomentWriteSpeedMB += momentWriteSpeedMB
+	//		//fmt.Println(v.IP, ":", v.Port, " -> average: read - ", averageReadSpeedMB, " MB/s, write - ", averageWriteSpeedMB, " MB/s, moment: read - ", momentReadSpeedMB, " MB/s, write - ", momentWriteSpeedMB, " MB/s")
+	//	}
+	//	fmt.Println("average: read -", sumAverageReadSpeedMB, "MB/s, write -", sumAverageWriteSpeedMB, "MB/s, moment: read - ", sumMomentReadSpeedMB, " MB/s, write - ", sumMomentWriteSpeedMB, " MB/s")
+	//}
+
+	var str string
+	_, _ = fmt.Scan(&str)
+	err = proxy.Close()
 	if err != nil {
-		log.Fatal("main: error proxy's serve: ", err.Error())
+		log.Fatal("main: error proxy's close: ", err.Error())
 	}
+	time.Sleep(15 * time.Second)
 
-	//conn, _ := net.Dial("tcp", "localhost:6999")
-	//time.Sleep(time.Second * 7)
-	//
-	//fmt.Println(conn.Read(make([]byte, 100)))
-
-	//start := time.Now()
-	////conn, err := net.Dial("tcp", "208.102.51.6:58208")
-	//conn, err := net.Dial("tcp", "ip-208-102-51-6.static.fuse.net:58208")
-	//
-	//fmt.Println(time.Now().Sub(start))
-	//fmt.Println(conn)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//}
-	//conn.Close()
-	//err = conn.Close()
-	//fmt.Println("error after close: ", err.Error())
-
-	//conn, _ := net.Dial("tcp", "localhost:7878")
-	//go func() {
-	//	buffer := make([]byte, 10)
-	//	_, err := conn.Read(buffer)
-	//	if err != nil {
-	//		fmt.Println(err.Error())
-	//		return
-	//	}
-	//	fmt.Println("returned")
-	//}()
-	//time.Sleep(time.Second * 2)
-	//conn.Close()
-	//fmt.Println("CLOSED")
-	//time.Sleep(time.Second * 5)
-	//
-	//networks := []string{"google.com:https", "ya.ru:https", "nsu.ru:https", "nsumedia.ru:https", "vk.com:https"}
-	//for _, v := range networks {
-	//	res, err := net.Dial("tcp", v)
-	//	fmt.Println(res, err)
-	//}
-	//
-	//go func() {
-	//	for {
-	//		time.Sleep(time.Second)
-	//	}
-	//}()
-	//
-	//var x chan bool
-	//x <- true
-	//fmt.Println("exiting")
-	//conn, err := net.Dial("tcp", "localhost:7878")
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	return
-	//}
-	//fmt.Println("before sleep")
-	//time.Sleep(time.Second * 10)
-	//fmt.Println("woke up")
-	//res, err := conn.Write(make([]byte, 20))
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//}
-	//fmt.Println("FINISHED: ", res)
+	fmt.Println(runtime.NumGoroutine())
 }
