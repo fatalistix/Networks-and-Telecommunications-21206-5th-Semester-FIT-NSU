@@ -1,37 +1,43 @@
-package ru.nsu.vbalashov2.onlinesnake.ui
+package ru.nsu.vbalashov2.onlinesnake.ui.impl
 
-import ru.nsu.vbalashov2.onlinesnake.ui.contentpanels.*
+import ru.nsu.vbalashov2.onlinesnake.ui.GameUI
+import ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels.*
 import java.awt.Color
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
 import javax.swing.JPanel
 
-class GameUIPanel : JPanel() {
+class GameUIPanel : JPanel(), GameUI {
     private val gameFieldPanel = GameFieldPanel()
     private val ratingPanel = RatingPanel()
     private val availableGamesPanel = AvailableGamesPanel()
     private val currentGameInfoPanel = CurrentGameInfoPanel()
     private val exitPanel = ExitPanel()
     private val newGamePanel = NewGamePanel()
+    private val gridBagInsets = Insets(2, 2, 2, 2)
 
     init {
         this.layout = GridBagLayout()
+    }
 
-        val gridBagInsets = Insets(2, 2, 2, 2)
-
+    // Game Field Panel configuration
+    init {
         val gbcGameFieldPanel = GridBagConstraints()
         gbcGameFieldPanel.gridx = 0
         gbcGameFieldPanel.gridy = 0
         gbcGameFieldPanel.gridwidth = 1
-        gbcGameFieldPanel.gridheight = 3
+        gbcGameFieldPanel.gridheight = 4
         gbcGameFieldPanel.fill = GridBagConstraints.BOTH
         gbcGameFieldPanel.anchor = GridBagConstraints.NORTHWEST
         gbcGameFieldPanel.weightx = 70.0
         gbcGameFieldPanel.weighty = 90.0
         gbcGameFieldPanel.insets = gridBagInsets
         this.add(gameFieldPanel, gbcGameFieldPanel)
+    }
 
+    // Rating Panel configuration
+    init {
         val gbcRatingPanel = GridBagConstraints()
         gbcRatingPanel.gridx = 1
         gbcRatingPanel.gridy = 0
@@ -43,7 +49,10 @@ class GameUIPanel : JPanel() {
         gbcRatingPanel.weighty = 43.0
         gbcRatingPanel.insets = gridBagInsets
         this.add(ratingPanel, gbcRatingPanel)
+    }
 
+    // Exit Panel configuration
+    init {
         val gbcExitPanel = GridBagConstraints()
         gbcExitPanel.gridx = 1
         gbcExitPanel.gridy = 1
@@ -55,7 +64,10 @@ class GameUIPanel : JPanel() {
         gbcExitPanel.weighty = 2.0
         gbcExitPanel.insets = gridBagInsets
         this.add(exitPanel, gbcExitPanel)
+    }
 
+    // New Game Panel configuration
+    init {
         val gbcNewGamePanel = GridBagConstraints()
         gbcNewGamePanel.gridx = 2
         gbcNewGamePanel.gridy = 1
@@ -102,12 +114,32 @@ class GameUIPanel : JPanel() {
         currentGameInfoPanel.background = Color.GREEN
     }
 
-    fun updateGameField(newField: IntArray, newFieldWidth: Int, newFieldHeight: Int) {
+    override fun updateField(field: IntArray, width: Int, height: Int) {
         this.gameFieldPanel.updateField(
-            newField = newField,
-            newFieldWidth = newFieldWidth,
-            newFieldHeight = newFieldHeight
+            newField = field,
+            newFieldWidth = width,
+            newFieldHeight = height
         )
+    }
+
+    override fun addStartGameListener(listener: (width: Int, height: Int, foodStatic: Int, stateDelayMs: Int) -> Unit) : Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun addWidthValidationRule(validationRule: (width: Int) -> Boolean): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun addHeightValidationRule(validationRule: (height: Int) -> Boolean): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun addFoodStaticValidationRule(validationRule: (foodStatic: Int) -> Boolean): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun addStateDelayMsValidationRule(validationRule: (stateDelayMs: Int) -> Boolean): Int {
+        TODO("Not yet implemented")
     }
 
 //    init {
