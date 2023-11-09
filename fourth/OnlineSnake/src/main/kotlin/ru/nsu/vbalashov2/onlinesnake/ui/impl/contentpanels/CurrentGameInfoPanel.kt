@@ -1,4 +1,4 @@
-package ru.nsu.vbalashov2.onlinesnake.ui.contentpanels
+package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
 import java.awt.GridLayout
 import javax.swing.JLabel
