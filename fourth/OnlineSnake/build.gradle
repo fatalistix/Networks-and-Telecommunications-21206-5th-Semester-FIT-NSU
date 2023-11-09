@@ -1,0 +1,53 @@
+plugins {
+    id "com.google.protobuf" version "0.9.4"
+    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
+    id 'application'
+}
+
+group = 'ru.nsu.vbalashov2'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-kotlin
+    implementation 'com.google.protobuf:protobuf-kotlin:3.24.4'
+    api 'com.google.protobuf:protobuf-kotlin:3.24.4'
+
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+
+    // https://mvnrepository.com/artifact/io.ktor/ktor-network-jvm
+    implementation 'io.ktor:ktor-network-jvm:2.3.5'
+
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing
+    runtimeOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3'
+
+
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+kotlin {
+    jvmToolchain(8)
+}
+
+application {
+    mainClassName = 'ru.nsu.vbalashov2.onlinesnake.MainKt'
+}
+
+
+protobuf {
+    generateProtoTasks {
+        all().each { task ->
+            task.plugins {
+                kotlin{}
+            }
+        }
+    }
+}
