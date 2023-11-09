@@ -1,7 +1,8 @@
 syntax = "proto2";
 package snakes;
-option java_package = "me.ippolitov.fit.snakes";
-option java_outer_classname = "SnakesProto";
+
+option java_package = "ru.nsu.vbalashov2.onlinesnake.proto";
+option java_outer_classname = "OnlineSnakeProto";
 
 // Роль узла в топологии связей узлов в пределах игры
 enum NodeRole {
