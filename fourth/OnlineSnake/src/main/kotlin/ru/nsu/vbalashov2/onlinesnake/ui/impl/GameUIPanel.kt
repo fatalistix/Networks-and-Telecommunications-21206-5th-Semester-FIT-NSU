@@ -11,10 +11,10 @@ import javax.swing.JPanel
 class GameUIPanel : JPanel(), GameUI {
     private val gameFieldPanel = GameFieldPanel()
     private val ratingPanel = RatingPanel()
+    private val buttonsPanel = ButtonsPanel()
+    private val gameConfigPanel = GameConfigPanel()
     private val availableGamesPanel = AvailableGamesPanel()
     private val currentGameInfoPanel = CurrentGameInfoPanel()
-    private val exitPanel = ExitPanel()
-    private val newGamePanel = NewGamePanel()
     private val gridBagInsets = Insets(2, 2, 2, 2)
 
     init {
@@ -41,7 +41,7 @@ class GameUIPanel : JPanel(), GameUI {
         val gbcRatingPanel = GridBagConstraints()
         gbcRatingPanel.gridx = 1
         gbcRatingPanel.gridy = 0
-        gbcRatingPanel.gridwidth = 2
+        gbcRatingPanel.gridwidth = 1
         gbcRatingPanel.gridheight = 1
         gbcRatingPanel.fill = GridBagConstraints.BOTH
         gbcRatingPanel.anchor = GridBagConstraints.NORTHWEST
@@ -51,51 +51,72 @@ class GameUIPanel : JPanel(), GameUI {
         this.add(ratingPanel, gbcRatingPanel)
     }
 
-    // Exit Panel configuration
+    // Buttons Panel configuration
     init {
-        val gbcExitPanel = GridBagConstraints()
-        gbcExitPanel.gridx = 1
-        gbcExitPanel.gridy = 1
-        gbcExitPanel.gridwidth = 1
-        gbcExitPanel.gridheight = 1
-        gbcExitPanel.fill = GridBagConstraints.BOTH
-        gbcExitPanel.anchor = GridBagConstraints.NORTHWEST
-        gbcExitPanel.weightx = 15.0
-        gbcExitPanel.weighty = 2.0
-        gbcExitPanel.insets = gridBagInsets
-        this.add(exitPanel, gbcExitPanel)
+        val gbcButtonsPanel = GridBagConstraints()
+        gbcButtonsPanel.gridx = 1
+        gbcButtonsPanel.gridy = 1
+        gbcButtonsPanel.gridwidth = 1
+        gbcButtonsPanel.gridheight = 1
+        gbcButtonsPanel.fill = GridBagConstraints.BOTH
+        gbcButtonsPanel.anchor = GridBagConstraints.NORTHWEST
+        gbcButtonsPanel.weightx = 30.0
+        gbcButtonsPanel.weighty = 2.0
+        gbcButtonsPanel.insets = gridBagInsets
+        this.add(buttonsPanel, gbcButtonsPanel)
     }
 
-    // New Game Panel configuration
-    init {
-        val gbcNewGamePanel = GridBagConstraints()
-        gbcNewGamePanel.gridx = 2
-        gbcNewGamePanel.gridy = 1
-        gbcNewGamePanel.gridwidth = 1
-        gbcNewGamePanel.gridheight = 1
-        gbcNewGamePanel.fill = GridBagConstraints.BOTH
-        gbcNewGamePanel.anchor = GridBagConstraints.NORTHWEST
-        gbcNewGamePanel.weightx = 15.0
-        gbcNewGamePanel.weighty = 2.0
-        gbcNewGamePanel.insets = gridBagInsets
-        this.add(newGamePanel, gbcNewGamePanel)
+//    // New Game Panel configuration
+//    init {
+//        val gbcNewGamePanel = GridBagConstraints()
+//        gbcNewGamePanel.gridx = 2
+//        gbcNewGamePanel.gridy = 1
+//        gbcNewGamePanel.gridwidth = 1
+//        gbcNewGamePanel.gridheight = 1
+//        gbcNewGamePanel.fill = GridBagConstraints.BOTH
+//        gbcNewGamePanel.anchor = GridBagConstraints.NORTHWEST
+//        gbcNewGamePanel.weightx = 15.0
+//        gbcNewGamePanel.weighty = 2.0
+//        gbcNewGamePanel.insets = gridBagInsets
+//        this.add(newGamePanel, gbcNewGamePanel)
+//    }
 
+    // Game Config panel
+    init {
+        val gbcGameConfigPanel = GridBagConstraints()
+        gbcGameConfigPanel.gridx = 1
+        gbcGameConfigPanel.gridy = 2
+        gbcGameConfigPanel.gridwidth = 1
+        gbcGameConfigPanel.gridheight = 1
+        gbcGameConfigPanel.fill = GridBagConstraints.BOTH
+        gbcGameConfigPanel.anchor = GridBagConstraints.NORTHWEST
+        gbcGameConfigPanel.weightx = 30.0
+        gbcGameConfigPanel.weighty = 5.0
+        gbcGameConfigPanel.insets = gridBagInsets
+        this.add(gameConfigPanel, gbcGameConfigPanel)
+    }
+
+    // Available Games list
+    init {
         val gbcAvailableGamesPanel = GridBagConstraints()
         gbcAvailableGamesPanel.gridx = 1
-        gbcAvailableGamesPanel.gridy = 2
-        gbcAvailableGamesPanel.gridwidth = 2
+        gbcAvailableGamesPanel.gridy = 3
+        gbcAvailableGamesPanel.gridwidth = 1
         gbcAvailableGamesPanel.gridheight = 1
         gbcAvailableGamesPanel.fill = GridBagConstraints.BOTH
         gbcAvailableGamesPanel.anchor = GridBagConstraints.NORTHWEST
         gbcAvailableGamesPanel.weightx = 30.0
-        gbcAvailableGamesPanel.weighty = 45.0
+        gbcAvailableGamesPanel.weighty = 40.0
         gbcAvailableGamesPanel.insets = gridBagInsets
         this.add(availableGamesPanel, gbcAvailableGamesPanel)
+    }
 
+    // Current Game Info panel
+    init {
         val gbcCurrentGameInfoPanel = GridBagConstraints()
         gbcCurrentGameInfoPanel.gridx = 0
-        gbcCurrentGameInfoPanel.gridy = 3
-        gbcCurrentGameInfoPanel.gridwidth = 3
+        gbcCurrentGameInfoPanel.gridy = 4
+        gbcCurrentGameInfoPanel.gridwidth = 2
         gbcCurrentGameInfoPanel.gridheight = 1
         gbcCurrentGameInfoPanel.fill = GridBagConstraints.BOTH
         gbcCurrentGameInfoPanel.anchor = GridBagConstraints.NORTHWEST
@@ -108,8 +129,7 @@ class GameUIPanel : JPanel(), GameUI {
     init {
         gameFieldPanel.background = Color.BLACK
         ratingPanel.background = Color.BLUE
-        exitPanel.background = Color.ORANGE
-        newGamePanel.background = Color.YELLOW
+        buttonsPanel.background = Color.ORANGE
         availableGamesPanel.background = Color.RED
         currentGameInfoPanel.background = Color.GREEN
     }
