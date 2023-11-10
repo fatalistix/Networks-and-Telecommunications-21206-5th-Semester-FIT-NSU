@@ -28,19 +28,27 @@ import javax.swing.JScrollPane
 class AvailableGamesPanel : JPanel() {
     private val availableScrollPane = JScrollPane()
 
-    init {
-        this.layout = GridBagLayout()
+//    init {
+//        this.layout = GridBagLayout()
+//
+//        val gbcAvailableScrollPane = GridBagConstraints()
+//        gbcAvailableScrollPane.gridx = 0
+//        gbcAvailableScrollPane.gridy = 0
+//        gbcAvailableScrollPane.gridwidth = 1
+//        gbcAvailableScrollPane.gridheight = 1
+//        gbcAvailableScrollPane.fill = GridBagConstraints.BOTH
+//        gbcAvailableScrollPane.anchor = GridBagConstraints.NORTHWEST
+//        gbcAvailableScrollPane.weightx = 100.0
+//        gbcAvailableScrollPane.weighty = 100.0
+//        this.add(availableScrollPane, gbcAvailableScrollPane)
+//    }
 
-        val gbcAvailableScrollPane = GridBagConstraints()
-        gbcAvailableScrollPane.gridx = 0
-        gbcAvailableScrollPane.gridy = 0
-        gbcAvailableScrollPane.gridwidth = 1
-        gbcAvailableScrollPane.gridheight = 1
-        gbcAvailableScrollPane.fill = GridBagConstraints.BOTH
-        gbcAvailableScrollPane.anchor = GridBagConstraints.NORTHWEST
-        gbcAvailableScrollPane.weightx = 100.0
-        gbcAvailableScrollPane.weighty = 100.0
-        this.add(availableScrollPane, gbcAvailableScrollPane)
+    init {
+        this.layout = GridLayout(1, 1)
+    }
+
+    init {
+        this.add(availableScrollPane)
     }
 
     init {
