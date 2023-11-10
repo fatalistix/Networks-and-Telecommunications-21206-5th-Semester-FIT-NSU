@@ -10,14 +10,18 @@ import javax.swing.JScrollPane
 class RatingPanel : JPanel() {
     private val ratingLabel = JLabel("Rating")
     private val ratingScrollPane = JScrollPane()
+
+    val gridBagInsets = Insets(2, 2, 2, 2)
+
     init {
         ratingLabel.horizontalAlignment = JLabel.CENTER
     }
+
     init {
         this.layout = GridBagLayout()
+    }
 
-        val gridBagInsets = Insets(2, 2, 2, 2)
-
+    init {
         val gbcRatingLabel = GridBagConstraints()
         gbcRatingLabel.gridx = 0
         gbcRatingLabel.gridy = 0
@@ -29,7 +33,9 @@ class RatingPanel : JPanel() {
         gbcRatingLabel.weighty = 5.0
         gbcRatingLabel.insets = gridBagInsets
         this.add(ratingLabel, gbcRatingLabel)
+    }
 
+    init {
         val gbcRatingScrollPane = GridBagConstraints()
         gbcRatingScrollPane.gridx = 0
         gbcRatingScrollPane.gridy = 1
