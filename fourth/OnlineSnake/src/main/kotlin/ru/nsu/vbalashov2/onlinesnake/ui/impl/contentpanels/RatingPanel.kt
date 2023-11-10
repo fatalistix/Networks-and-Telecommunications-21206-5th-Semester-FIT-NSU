@@ -11,7 +11,7 @@ class RatingPanel : JPanel() {
     private val ratingLabel = JLabel("Rating")
     private val ratingScrollPane = JScrollPane()
 
-    val gridBagInsets = Insets(2, 2, 2, 2)
+    private val gridBagInsets = Insets(2, 2, 2, 2)
 
     init {
         ratingLabel.horizontalAlignment = JLabel.CENTER
