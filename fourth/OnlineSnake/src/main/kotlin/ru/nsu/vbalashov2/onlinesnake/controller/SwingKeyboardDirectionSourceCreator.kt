@@ -13,5 +13,10 @@ class SwingKeyboardDirectionSourceCreator/*(private val component: Component)*/:
 //        component.addKeyListener(directionSource)
 //        return directionSource
 //    }
-    override fun createDirectionSource(initDirection: Direction): DirectionSource = SwingKeyboardDirectionSource(initDirection)
+    private val directionSource = SwingKeyboardDirectionSource()
+    override fun createDirectionSource(initDirection: Direction): DirectionSource {
+        directionSource.initDirection = initDirection
+        directionSource.direction = initDirection
+        return directionSource
+    }
 }
