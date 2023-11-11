@@ -22,6 +22,7 @@ class OnlineSnakeApp : JFrame() {
 
 fun main() {
     runBlocking(Dispatchers.Main) {
+        System.setProperty("sun.java2d.opengl", "true")
         SwingUtilities.invokeLater {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
             val frame = OnlineSnakeApp()

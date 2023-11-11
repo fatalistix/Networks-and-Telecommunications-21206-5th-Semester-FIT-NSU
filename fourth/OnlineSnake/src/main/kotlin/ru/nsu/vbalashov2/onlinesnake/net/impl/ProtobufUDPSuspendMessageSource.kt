@@ -10,7 +10,7 @@ import ru.nsu.vbalashov2.onlinesnake.net.SuspendMessageSource
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto
 
-class ProtobufMulticastSuspendMessageSource : SuspendMessageSource {
+class ProtobufUDPSuspendMessageSource : SuspendMessageSource {
     private val mcastIP = "239.192.0.4"
     private val port = 9192
     private val selectorManager = SelectorManager(Dispatchers.IO)
