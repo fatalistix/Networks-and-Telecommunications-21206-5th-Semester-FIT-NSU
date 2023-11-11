@@ -11,6 +11,19 @@ class SnakeGame(
     stateDelayMs: Int,
     onFieldUpdate: (snakeKeysForRemoval: List<SnakeKey>, fieldArray: IntArray) -> Unit
 ) {
+    private object GameConstraints {
+        const val MIN_STATE_DELAY_MS = 100
+        const val MAX_STATE_DELAY_MS = 3000
+    }
+
+    init {
+        if (stateDelayMs < GameConstraints.MIN_STATE_DELAY_MS || GameConstraints.MAX_STATE_DELAY_MS < stateDelayMs) {
+            throw IllegalArgumentException("state delay ms must be from " +
+                    "${GameConstraints.MIN_STATE_DELAY_MS} to " +
+                    "${GameConstraints.MAX_STATE_DELAY_MS}")
+        }
+    }
+
     private val gameField = GameField(fieldWidth = width, fieldHeight = height, foodStatic = foodStatic)
     private val keysRelations = KeysRelations()
 
