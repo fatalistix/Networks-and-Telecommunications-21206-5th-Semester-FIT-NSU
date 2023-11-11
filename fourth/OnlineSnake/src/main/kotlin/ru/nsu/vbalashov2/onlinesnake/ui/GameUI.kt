@@ -10,6 +10,7 @@ interface GameUI {
 //    fun removeAvailableGame(gameName: String)
     fun updateField(field: IntArray, width: Int, height: Int)
     fun addNewGameListener(listener: NewGameListener) : Int
+    fun addExitListener(listener: ExitListener) : Int
     fun addWidthValidationRule(validationRule: WidthValidationRule) : Int
     fun addHeightValidationRule(validationRule: HeightValidationRule) : Int
     fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule) : Int
