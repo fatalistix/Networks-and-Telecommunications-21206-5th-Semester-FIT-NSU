@@ -10,11 +10,9 @@ import ru.nsu.vbalashov2.onlinesnake.net.SuspendMessageSource
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto
 
-class ProtobufUDPSuspendMessageSource : SuspendMessageSource {
-    private val mcastIP = "239.192.0.4"
-    private val port = 9192
+class ProtobufUDPSuspendMessageSource(ip: String, port: Int) : SuspendMessageSource {
     private val selectorManager = SelectorManager(Dispatchers.IO)
-    private val socket = aSocket(selectorManager).udp().bind(InetSocketAddress(mcastIP, port))
+    private val socket = aSocket(selectorManager).udp().bind(InetSocketAddress(ip, port))
 
     override suspend fun readSuspend(): RawMessage {
         val datagram = socket.receive()
