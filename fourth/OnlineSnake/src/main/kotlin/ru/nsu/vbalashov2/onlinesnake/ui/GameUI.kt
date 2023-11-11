@@ -1,12 +1,17 @@
 package ru.nsu.vbalashov2.onlinesnake.ui
 
+typealias WidthValidationRule = IntValidationRule
+typealias HeightValidationRule = IntValidationRule
+typealias FoodStaticValidationRule = IntValidationRule
+typealias StateDelayMsValidationRule = IntValidationRule
+
 interface GameUI {
 //    fun addAvailableGame(info: AvailableGame)
 //    fun removeAvailableGame(gameName: String)
     fun updateField(field: IntArray, width: Int, height: Int)
-    fun addStartGameListener(listener: (width: Int, height: Int, foodStatic: Int, stateDelayMs: Int) -> Unit) : Int
-    fun addWidthValidationRule(validationRule: (width: Int) -> Boolean) : Int
-    fun addHeightValidationRule(validationRule: (height: Int) -> Boolean) : Int
-    fun addFoodStaticValidationRule(validationRule: (foodStatic: Int) -> Boolean) : Int
-    fun addStateDelayMsValidationRule(validationRule: (stateDelayMs: Int) -> Boolean) : Int
+    fun addNewGameListener(listener: NewGameListener) : Int
+    fun addWidthValidationRule(validationRule: WidthValidationRule) : Int
+    fun addHeightValidationRule(validationRule: HeightValidationRule) : Int
+    fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule) : Int
+    fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule) : Int
 }
