@@ -7,13 +7,14 @@ import kotlin.concurrent.timer
 class SnakeGame(
     width: Int,
     height: Int,
-    updateIntervalMillis: Long,
+    foodStatic: Int,
+    stateDelayMs: Int,
     onFieldUpdate: (snakeKeysForRemoval: List<SnakeKey>, fieldArray: IntArray) -> Unit
 ) {
-    private val gameField = GameField(fieldWidth = width, fieldHeight = height, foodStatic = 2)
+    private val gameField = GameField(fieldWidth = width, fieldHeight = height, foodStatic = foodStatic)
     private val keysRelations = KeysRelations()
 
-    private val updateTimer = timer(initialDelay=0, period=updateIntervalMillis) {
+    private val updateTimer = timer(initialDelay=0, period=stateDelayMs.toLong()) {
         val result: Pair<List<FieldKey>, IntArray>
         synchronized(gameField) {
             result = gameField.updateField()
