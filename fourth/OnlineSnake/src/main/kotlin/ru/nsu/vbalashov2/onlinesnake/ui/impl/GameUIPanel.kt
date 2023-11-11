@@ -1,6 +1,6 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl
 
-import ru.nsu.vbalashov2.onlinesnake.ui.GameUI
+import ru.nsu.vbalashov2.onlinesnake.ui.*
 import ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels.*
 import java.awt.Color
 import java.awt.GridBagConstraints
@@ -66,20 +66,10 @@ class GameUIPanel : JPanel(), GameUI {
         this.add(buttonsPanel, gbcButtonsPanel)
     }
 
-//    // New Game Panel configuration
-//    init {
-//        val gbcNewGamePanel = GridBagConstraints()
-//        gbcNewGamePanel.gridx = 2
-//        gbcNewGamePanel.gridy = 1
-//        gbcNewGamePanel.gridwidth = 1
-//        gbcNewGamePanel.gridheight = 1
-//        gbcNewGamePanel.fill = GridBagConstraints.BOTH
-//        gbcNewGamePanel.anchor = GridBagConstraints.NORTHWEST
-//        gbcNewGamePanel.weightx = 15.0
-//        gbcNewGamePanel.weighty = 2.0
-//        gbcNewGamePanel.insets = gridBagInsets
-//        this.add(newGamePanel, gbcNewGamePanel)
-//    }
+    init {
+        gameConfigPanel.addValidationFailListener(buttonsPanel)
+        gameConfigPanel.addValidationSuccessListener(buttonsPanel)
+    }
 
     // Game Config panel
     init {
@@ -142,25 +132,26 @@ class GameUIPanel : JPanel(), GameUI {
         )
     }
 
-    override fun addStartGameListener(listener: (width: Int, height: Int, foodStatic: Int, stateDelayMs: Int) -> Unit) : Int {
+    override fun addNewGameListener(listener: NewGameListener) : Int {
+        return buttonsPanel.addNewGameListener(listener)
+    }
+
+    override fun addWidthValidationRule(validationRule: WidthValidationRule): Int {
         TODO("Not yet implemented")
     }
 
-    override fun addWidthValidationRule(validationRule: (width: Int) -> Boolean): Int {
+    override fun addHeightValidationRule(validationRule: HeightValidationRule): Int {
         TODO("Not yet implemented")
     }
 
-    override fun addHeightValidationRule(validationRule: (height: Int) -> Boolean): Int {
+    override fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule): Int {
         TODO("Not yet implemented")
     }
 
-    override fun addFoodStaticValidationRule(validationRule: (foodStatic: Int) -> Boolean): Int {
+    override fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule): Int {
         TODO("Not yet implemented")
     }
-
-    override fun addStateDelayMsValidationRule(validationRule: (stateDelayMs: Int) -> Boolean): Int {
-        TODO("Not yet implemented")
-    }
+}
 
 //    init {
 //        gamePanel.preferredSize = Dimension(200, 200)
@@ -173,7 +164,6 @@ class GameUIPanel : JPanel(), GameUI {
 //        gameField[56] = -1
 //        gamePanel.updateField(gameField)
 //    }
-}
 
 
 
