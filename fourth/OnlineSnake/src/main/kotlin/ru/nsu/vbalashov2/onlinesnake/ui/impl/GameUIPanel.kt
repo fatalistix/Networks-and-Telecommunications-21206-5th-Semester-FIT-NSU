@@ -136,6 +136,10 @@ class GameUIPanel : JPanel(), GameUI {
         return buttonsPanel.addNewGameListener(listener)
     }
 
+    override fun addExitListener(listener: ExitListener): Int {
+        return buttonsPanel.addExitListener(listener)
+    }
+
     override fun addWidthValidationRule(validationRule: WidthValidationRule): Int {
         TODO("Not yet implemented")
     }
