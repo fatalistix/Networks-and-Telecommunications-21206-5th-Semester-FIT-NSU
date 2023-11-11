@@ -6,23 +6,20 @@ import java.awt.KeyboardFocusManager
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 
-class SwingKeyboardDirectionSource(override val initDirection: Direction) : DirectionSource /*, KeyAdapter() */ {
-    private var _direction = initDirection
-
-    override val direction: Direction
-        get() = _direction
-
+class SwingKeyboardDirectionSource : DirectionSource /*, KeyAdapter() */ {
+    override var initDirection: Direction = Direction.DOWN
+    override var direction: Direction = Direction.DOWN
 
     init {
         KeyboardFocusManager.getCurrentKeyboardFocusManager()
             .addKeyEventDispatcher {
                 val keyCode = it!!.keyCode
-                _direction = when (keyCode) {
+                direction = when (keyCode) {
                     KeyEvent.VK_LEFT, KeyEvent.VK_A -> Direction.LEFT
                     KeyEvent.VK_DOWN, KeyEvent.VK_S -> Direction.DOWN
                     KeyEvent.VK_RIGHT, KeyEvent.VK_D -> Direction.RIGHT
                     KeyEvent.VK_UP, KeyEvent.VK_W -> Direction.UP
-                    else -> _direction
+                    else -> direction
                 }
                 false
             }
