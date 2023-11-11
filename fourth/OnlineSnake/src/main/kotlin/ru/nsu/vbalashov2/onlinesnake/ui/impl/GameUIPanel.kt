@@ -141,19 +141,19 @@ class GameUIPanel : JPanel(), GameUI {
     }
 
     override fun addWidthValidationRule(validationRule: WidthValidationRule): Int {
-        TODO("Not yet implemented")
+        return gameConfigPanel.addWidthValidationRule(validationRule)
     }
 
     override fun addHeightValidationRule(validationRule: HeightValidationRule): Int {
-        TODO("Not yet implemented")
+        return gameConfigPanel.addHeightValidationRule(validationRule)
     }
 
     override fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule): Int {
-        TODO("Not yet implemented")
+        return gameConfigPanel.addFoodStaticValidationRule(validationRule)
     }
 
     override fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule): Int {
-        TODO("Not yet implemented")
+        return gameConfigPanel.addStateDelayMsValidationRule(validationRule)
     }
 }
 
