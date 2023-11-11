@@ -14,6 +14,7 @@ class Controller(private val mainAppFrame: JFrame) : NewGameListener, ExitListen
     private val gameUI = GameUIPanel()
     private val players: MutableMap<Int, SnakeKey> = mutableMapOf()
     private var game: SnakeGame? = null
+    private val swingKeyboardDirectionSourceCreator = SwingKeyboardDirectionSourceCreator()
 
     init {
         this.mainAppFrame.contentPane.add(gameUI)
@@ -22,6 +23,21 @@ class Controller(private val mainAppFrame: JFrame) : NewGameListener, ExitListen
     init {
         gameUI.addNewGameListener(this)
         gameUI.addExitListener(this)
+    }
+
+    init {
+        gameUI.addWidthValidationRule {
+            it in 10..100
+        }
+        gameUI.addHeightValidationRule {
+            it in 10..100
+        }
+        gameUI.addFoodStaticValidationRule {
+            it in 0..100
+        }
+        gameUI.addStateDelayMsValidationRule {
+            it in 100..3000
+        }
     }
 
     override fun newGame(gameConfig: GameConfig) {
@@ -36,6 +52,7 @@ class Controller(private val mainAppFrame: JFrame) : NewGameListener, ExitListen
                 }
             }
         )
+        game?.createSnake(swingKeyboardDirectionSourceCreator)
     }
 
     override fun exit() {
