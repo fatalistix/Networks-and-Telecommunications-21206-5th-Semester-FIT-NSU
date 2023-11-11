@@ -1,14 +1,22 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
+import ru.nsu.vbalashov2.onlinesnake.ui.ExitListener
+import ru.nsu.vbalashov2.onlinesnake.ui.NewGameListener
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.GameConfig
 import java.awt.GridLayout
 import javax.swing.JButton
 import javax.swing.JPanel
 
-class ButtonsPanel : JPanel() {
+class ButtonsPanel : JPanel(), ValidationFailListener, ValidationSuccessListener {
     private val exitButton = JButton("Exit")
     private val newGameButton = JButton("New")
+
+    private val newGameListenersList:
+            MutableList<NewGameListener> = mutableListOf()
+    private val exitListenersList:
+            MutableList<ExitListener> = mutableListOf()
+
+    private var verifiedGameConfig: GameConfig = GameConfig(0, 0, 0, 0)
 
     init {
         this.layout = GridLayout(1, 2)
@@ -18,6 +26,30 @@ class ButtonsPanel : JPanel() {
         this.add(exitButton)
         this.add(newGameButton)
     }
+
+    init {
+        newGameButton.isEnabled = false
+    }
+
+    fun addNewGameListener(listener: NewGameListener): Int {
+        this.newGameListenersList += listener
+        return this.newGameListenersList.size - 1
+    }
+
+    fun addExitListener(listener: ExitListener): Int {
+        this.exitListenersList += listener
+        return this.exitListenersList.size - 1
+    }
+
+    override fun validationSuccess(gameConfig: GameConfig) {
+        verifiedGameConfig = gameConfig
+        newGameButton.isEnabled = true
+    }
+
+    override fun validationFail() {
+        newGameButton.isEnabled = false
+    }
+
 
 //    init {
 //        this.layout = GridBagLayout()
