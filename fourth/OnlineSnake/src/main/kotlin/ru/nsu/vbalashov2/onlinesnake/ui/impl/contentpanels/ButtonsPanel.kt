@@ -31,6 +31,22 @@ class ButtonsPanel : JPanel(), ValidationFailListener, ValidationSuccessListener
         newGameButton.isEnabled = false
     }
 
+    init {
+        newGameButton.addActionListener {
+            newGameListenersList.forEach { listener ->
+                listener.newGame(verifiedGameConfig)
+            }
+        }
+    }
+
+    init {
+        exitButton.addActionListener {
+            exitListenersList.forEach { listener ->
+                listener.exit()
+            }
+        }
+    }
+
     fun addNewGameListener(listener: NewGameListener): Int {
         this.newGameListenersList += listener
         return this.newGameListenersList.size - 1
