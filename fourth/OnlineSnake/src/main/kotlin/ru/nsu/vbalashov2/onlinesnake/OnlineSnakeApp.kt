@@ -1,5 +1,7 @@
 package ru.nsu.vbalashov2.onlinesnake
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import ru.nsu.vbalashov2.onlinesnake.controller.Controller
 import java.awt.Dimension
 import javax.swing.JFrame
@@ -19,10 +21,12 @@ class OnlineSnakeApp : JFrame() {
 }
 
 fun main() {
-    SwingUtilities.invokeLater {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-        val frame = OnlineSnakeApp()
-        Controller(frame)
-        frame.isVisible = true
+    runBlocking(Dispatchers.Main) {
+        SwingUtilities.invokeLater {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+            val frame = OnlineSnakeApp()
+            Controller(frame)
+            frame.isVisible = true
+        }
     }
 }
