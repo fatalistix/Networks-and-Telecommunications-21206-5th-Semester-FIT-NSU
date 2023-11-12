@@ -58,17 +58,14 @@ class Controller : NewGameListener, ExitListener {
 //                }
 //            }
             onFieldUpdate = { snakes, food ->
-                SwingUtilities.invokeLater {
-                    gameUI.updateField(
-                        snakes.map {
-                            list ->
-                            list.map { KeyPoint(it.x, it.y) }
-                                   },
-                        food.map { KeyPoint(it.x, it.y) },
-                        gameConfig.width,
-                        gameConfig.height,
-                    )
-                }
+                gameUI.updateField(
+                    snakes.map { list ->
+                        list.map { KeyPoint(it.x, it.y) }
+                               },
+                    food.map { KeyPoint(it.x, it.y) },
+                    gameConfig.width,
+                    gameConfig.height,
+                )
             }
         )
         game?.createSnake(swingKeyboardDirectionSourceCreator)
