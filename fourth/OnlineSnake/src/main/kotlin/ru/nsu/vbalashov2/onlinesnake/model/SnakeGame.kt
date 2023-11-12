@@ -2,6 +2,7 @@ package ru.nsu.vbalashov2.onlinesnake.model
 
 import ru.nsu.vbalashov2.onlinesnake.model.gamefield.FieldKey
 import ru.nsu.vbalashov2.onlinesnake.model.gamefield.GameField
+import ru.nsu.vbalashov2.onlinesnake.model.gamefield.Position
 import kotlin.concurrent.timer
 
 class SnakeGame(
@@ -9,7 +10,8 @@ class SnakeGame(
     height: Int,
     foodStatic: Int,
     stateDelayMs: Int,
-    onFieldUpdate: (snakeKeysForRemoval: List<SnakeKey>, fieldArray: IntArray) -> Unit
+//    onFieldUpdate: (snakeKeysForRemoval: List<SnakeKey>, fieldArray: IntArray) -> Unit
+    onFieldUpdate: (snakesKeyPointsList: List<List<Position>>, foodList: List<Position>) -> Unit
 ) {
     private object GameConstraints {
         const val MIN_STATE_DELAY_MS = 100
@@ -28,11 +30,13 @@ class SnakeGame(
     private val keysRelations = KeysRelations()
 
     private val updateTimer = timer(initialDelay=0, period=stateDelayMs.toLong()) {
-        val result: Pair<List<FieldKey>, IntArray>
+//        val result: Pair<List<FieldKey>, IntArray>
+        val result: Pair<List<List<Position>>, List<Position>>
         synchronized(gameField) {
             result = gameField.updateField()
         }
-        onFieldUpdate(result.first.map { keysRelations[it]!! }, result.second)
+//        onFieldUpdate(result.first.map { keysRelations[it]!! }, result.second)
+        onFieldUpdate(result.first, result.second)
     }
 
     fun createSnake(directionSourceCreator: DirectionSourceCreator): SnakeKey {
