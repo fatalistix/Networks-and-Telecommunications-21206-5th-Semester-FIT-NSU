@@ -42,6 +42,10 @@ class Controller : NewGameListener, ExitListener {
         }
     }
 
+    fun start() {
+        gameUI.start()
+    }
+
     override fun newGame(gameConfig: GameConfig) {
         game = SnakeGame(
             width = gameConfig.width,
