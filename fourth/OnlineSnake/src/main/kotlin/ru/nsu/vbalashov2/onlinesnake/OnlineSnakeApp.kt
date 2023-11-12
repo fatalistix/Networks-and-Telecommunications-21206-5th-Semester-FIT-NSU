@@ -21,6 +21,6 @@ import javax.swing.UIManager
 fun main() {
     runBlocking {
         System.setProperty("sun.java2d.opengl", "true")
-        Controller()
+        Controller().start()
     }
 }
