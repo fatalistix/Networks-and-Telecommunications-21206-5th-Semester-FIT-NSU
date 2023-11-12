@@ -9,7 +9,7 @@ import java.awt.GridBagLayout
 import java.awt.Insets
 import javax.swing.JPanel
 
-class GameUIPanel : JPanel(), GameUI {
+class GameUIPanel : JPanel() {
     private val gameFieldPanel = GameFieldPanel()
     private val ratingPanel = RatingPanel()
     private val buttonsPanel = ButtonsPanel()
@@ -133,7 +133,7 @@ class GameUIPanel : JPanel(), GameUI {
 //        )
 //    }
 
-    override fun updateField(snakesKeyPointsList: List<List<KeyPoint>>, foodList: List<KeyPoint>, width: Int, height: Int) {
+    fun updateField(snakesKeyPointsList: List<List<KeyPoint>>, foodList: List<KeyPoint>, width: Int, height: Int) {
         this.gameFieldPanel.updateField(
             snakesKeyPointsList,
             foodList,
@@ -142,27 +142,27 @@ class GameUIPanel : JPanel(), GameUI {
         )
     }
 
-    override fun addNewGameListener(listener: NewGameListener) : Int {
+    fun addNewGameListener(listener: NewGameListener) : Int {
         return buttonsPanel.addNewGameListener(listener)
     }
 
-    override fun addExitListener(listener: ExitListener): Int {
+    fun addExitListener(listener: ExitListener): Int {
         return buttonsPanel.addExitListener(listener)
     }
 
-    override fun addWidthValidationRule(validationRule: WidthValidationRule): Int {
+    fun addWidthValidationRule(validationRule: WidthValidationRule): Int {
         return gameConfigPanel.addWidthValidationRule(validationRule)
     }
 
-    override fun addHeightValidationRule(validationRule: HeightValidationRule): Int {
+    fun addHeightValidationRule(validationRule: HeightValidationRule): Int {
         return gameConfigPanel.addHeightValidationRule(validationRule)
     }
 
-    override fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule): Int {
+    fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule): Int {
         return gameConfigPanel.addFoodStaticValidationRule(validationRule)
     }
 
-    override fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule): Int {
+    fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule): Int {
         return gameConfigPanel.addStateDelayMsValidationRule(validationRule)
     }
 }
