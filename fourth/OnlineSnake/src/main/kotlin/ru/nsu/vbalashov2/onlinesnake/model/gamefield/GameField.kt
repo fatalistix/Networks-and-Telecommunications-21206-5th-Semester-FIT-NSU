@@ -163,7 +163,7 @@ class GameField(private val fieldWidth: Int, private val fieldHeight: Int, priva
     private fun removeSnakeOnField(snake: Snake) =
         snake.coords.forEach { this.snakeGameField[positionToFieldArrayIndex(it)] = 0 }
 
-    fun updateField(): Pair<List<FieldKey>, IntArray> {
+    fun updateField(): Pair<List<List<Position>>, List<Position>> {
         val snakesList = snakesMapper.getAllSnakes()
         snakesList.forEach { snakeWithInfo -> snakeWithInfo.snake.move(getSurroundingContext(snakeWithInfo.snake.head)) }
         val snakesListForRemoval = snakesList.filter { snakeWithInfo ->
@@ -190,7 +190,8 @@ class GameField(private val fieldWidth: Int, private val fieldHeight: Int, priva
             snakesMapper.removeSnake(snakeWithInfo.fieldKey)
         }
         placeMissingFood()
-        return Pair(snakesListForRemoval.map { snakeWithInfo -> snakeWithInfo.fieldKey }, this.snakeGameField.copyOf())
+//        return Pair(snakesListForRemoval.map { snakeWithInfo -> snakeWithInfo.fieldKey }, this.snakeGameField.copyOf())
+        return Pair(snakesList.map { it.snake.keyPoints.toList() }, foodSet.toList().map { fieldArrayIndexToPosition(it) })
     }
 
     private fun getSurroundingContext(position: Position): Context {
