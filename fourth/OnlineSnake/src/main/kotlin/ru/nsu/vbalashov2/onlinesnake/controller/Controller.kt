@@ -2,9 +2,13 @@ package ru.nsu.vbalashov2.onlinesnake.controller
 
 import ru.nsu.vbalashov2.onlinesnake.model.SnakeGame
 import ru.nsu.vbalashov2.onlinesnake.model.SnakeKey
+import ru.nsu.vbalashov2.onlinesnake.proto.GameMessageKt
+import ru.nsu.vbalashov2.onlinesnake.proto.gameAnnouncement
+import ru.nsu.vbalashov2.onlinesnake.proto.gamePlayers
 import ru.nsu.vbalashov2.onlinesnake.ui.ExitListener
 import ru.nsu.vbalashov2.onlinesnake.ui.NewGameListener
 import ru.nsu.vbalashov2.onlinesnake.ui.dto.GameConfig
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.KeyPoint
 import ru.nsu.vbalashov2.onlinesnake.ui.impl.GameUIPanel
 import javax.swing.JFrame
 import javax.swing.SwingUtilities
@@ -46,9 +50,22 @@ class Controller(private val mainAppFrame: JFrame) : NewGameListener, ExitListen
             height = gameConfig.height,
             foodStatic = gameConfig.foodStatic,
             stateDelayMs = gameConfig.stateDelayMs,
-            onFieldUpdate = { _, fieldArray ->
+//            onFieldUpdate = { _, fieldArray ->
+//                SwingUtilities.invokeLater {
+//                    gameUI.updateField(fieldArray, gameConfig.width, gameConfig.height)
+//                }
+//            }
+            onFieldUpdate = { snakes, food ->
                 SwingUtilities.invokeLater {
-                    gameUI.updateField(fieldArray, gameConfig.width, gameConfig.height)
+                    gameUI.updateField(
+                        snakes.map {
+                            list ->
+                            list.map { KeyPoint(it.x, it.y) }
+                                   },
+                        food.map { KeyPoint(it.x, it.y) },
+                        gameConfig.width,
+                        gameConfig.height,
+                    )
                 }
             }
         )
