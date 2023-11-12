@@ -18,9 +18,8 @@ import javax.swing.UIManager
 //    }
 //}
 
-fun main() {
+fun main() =
     runBlocking {
         System.setProperty("sun.java2d.opengl", "true")
         Controller().start()
-    }
 }
