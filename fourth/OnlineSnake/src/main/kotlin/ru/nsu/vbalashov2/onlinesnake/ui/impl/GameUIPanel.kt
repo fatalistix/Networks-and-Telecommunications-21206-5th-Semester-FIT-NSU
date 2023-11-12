@@ -1,6 +1,7 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl
 
 import ru.nsu.vbalashov2.onlinesnake.ui.*
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.KeyPoint
 import ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels.*
 import java.awt.Color
 import java.awt.GridBagConstraints
@@ -124,11 +125,20 @@ class GameUIPanel : JPanel(), GameUI {
         currentGameInfoPanel.background = Color.GREEN
     }
 
-    override fun updateField(field: IntArray, width: Int, height: Int) {
+//    override fun updateField(field: IntArray, width: Int, height: Int) {
+//        this.gameFieldPanel.updateField(
+//            newField = field,
+//            newFieldWidth = width,
+//            newFieldHeight = height
+//        )
+//    }
+
+    override fun updateField(snakesKeyPointsList: List<List<KeyPoint>>, foodList: List<KeyPoint>, width: Int, height: Int) {
         this.gameFieldPanel.updateField(
-            newField = field,
-            newFieldWidth = width,
-            newFieldHeight = height
+            snakesKeyPointsList,
+            foodList,
+            width,
+            height,
         )
     }
 
