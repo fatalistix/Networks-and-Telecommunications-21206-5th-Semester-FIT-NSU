@@ -11,6 +11,7 @@ interface GameUI {
 //    fun addAvailableGame(info: AvailableGame)
 //    fun removeAvailableGame(gameName: String)
 //    fun updateField(field: IntArray, width: Int, height: Int)
+    fun start()
     fun updateField(snakesKeyPointsList: List<List<KeyPoint>>, foodList: List<KeyPoint>, width: Int, height: Int)
     fun addNewGameListener(listener: NewGameListener) : Int
     fun addExitListener(listener: ExitListener) : Int
@@ -18,4 +19,5 @@ interface GameUI {
     fun addHeightValidationRule(validationRule: HeightValidationRule) : Int
     fun addFoodStaticValidationRule(validationRule: FoodStaticValidationRule) : Int
     fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule) : Int
+    fun addApplicationCloseListener(listener: ApplicationCloseListener) : Int
 }
