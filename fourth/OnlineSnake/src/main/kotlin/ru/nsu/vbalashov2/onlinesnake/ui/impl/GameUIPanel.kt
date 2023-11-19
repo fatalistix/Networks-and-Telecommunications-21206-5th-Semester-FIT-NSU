@@ -1,6 +1,7 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl
 
 import ru.nsu.vbalashov2.onlinesnake.ui.*
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameInfo
 import ru.nsu.vbalashov2.onlinesnake.ui.dto.KeyPoint
 import ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels.*
 import java.awt.Color
@@ -164,6 +165,18 @@ class GameUIPanel : JPanel() {
 
     fun addStateDelayMsValidationRule(validationRule: StateDelayMsValidationRule): Int {
         return gameConfigPanel.addStateDelayMsValidationRule(validationRule)
+    }
+
+    fun addAvailableGame(availableGameInfo: AvailableGameInfo, selectedListener: AvailableGameSelectedListener): Int {
+        return availableGamesPanel.addAvailableGame(availableGameInfo, selectedListener)
+    }
+
+    fun removeAvailableGame(index: Int) {
+        TODO()
+    }
+
+    fun updateAvailableGame(availableGameInfo: AvailableGameInfo, index: Int) {
+        TODO()
     }
 }
 
