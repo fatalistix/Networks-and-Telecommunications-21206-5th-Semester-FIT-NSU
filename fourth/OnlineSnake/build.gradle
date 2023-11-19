@@ -1,6 +1,6 @@
 plugins {
     id "com.google.protobuf" version "0.9.4"
-    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.20'
     id 'application'
 }
 
@@ -25,6 +25,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing
     runtimeOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3'
 
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-stdlib
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.20'
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
@@ -38,7 +40,7 @@ kotlin {
 }
 
 application {
-    mainClassName = 'ru.nsu.vbalashov2.onlinesnake.MainKt'
+    mainClassName = 'ru.nsu.vbalashov2.onlinesnake.OnlineSnakeAppKt'
 }
 
 
@@ -49,5 +51,16 @@ protobuf {
                 kotlin{}
             }
         }
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
