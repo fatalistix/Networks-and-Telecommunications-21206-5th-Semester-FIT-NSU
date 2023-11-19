@@ -1,6 +1,7 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl
 
 import ru.nsu.vbalashov2.onlinesnake.ui.*
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameInfo
 import ru.nsu.vbalashov2.onlinesnake.ui.dto.KeyPoint
 import java.awt.Dimension
 import java.awt.event.WindowAdapter
@@ -63,5 +64,17 @@ class GameFrame : JFrame(), GameUI {
     override fun addApplicationCloseListener(listener: ApplicationCloseListener): Int {
         this.applicationCloseListenersList += listener
         return this.applicationCloseListenersList.size - 1
+    }
+
+    override fun addAvailableGame(availableGameInfo: AvailableGameInfo, selectedListener: AvailableGameSelectedListener): Int {
+        return this.gameUIPanel.addAvailableGame(availableGameInfo, selectedListener)
+    }
+
+    override fun removeAvailableGame(index: Int) {
+        this.gameUIPanel.removeAvailableGame(index)
+    }
+
+    override fun updateAvailableGame(availableGameInfo: AvailableGameInfo, index: Int) {
+        this.gameUIPanel.updateAvailableGame(availableGameInfo, index)
     }
 }
