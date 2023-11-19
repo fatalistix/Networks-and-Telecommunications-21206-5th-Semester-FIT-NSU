@@ -24,6 +24,10 @@ class SwingKeyboardDirectionSource : DirectionSource /*, KeyAdapter() */ {
                 false
             }
     }
+
+    fun addDirectionChangedEventListener() {
+
+    }
 //
 //    override fun keyPressed(e: KeyEvent?) {
 //        val keyCode = e!!.keyCode
