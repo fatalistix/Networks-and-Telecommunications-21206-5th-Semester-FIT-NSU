@@ -54,7 +54,7 @@ func main() {
 		HostPolicy: autocert.HostWhitelist(domainName),
 	}
 	s := &http.Server{
-		Addr:      "127.0.0.1:6969",
+		Addr:      ":6969",
 		TLSConfig: m.TLSConfig(),
 	}
 	log.Fatal(s.ListenAndServeTLS("", ""))
