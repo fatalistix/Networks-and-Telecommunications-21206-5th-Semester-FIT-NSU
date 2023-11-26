@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Places</title>
+
+    <link type="image/png" sizes="96x96" rel="icon" href="icons8-location-96.png"/>
+
+
+<!--    MAIN-->
+    <script type="module" defer="defer" src="./main.js"></script>
+    <link rel="stylesheet" href="main.css"/>
+
+
+<!--    COMMON-->
+    <script type="module" defer="defer" src="common/backend_web_socket.js"></script>
+
+
+<!--    HEADER-->
+    <link rel="stylesheet" href="header/header.css"/>
+
+<!--    MAPS-->
+    <link rel="stylesheet" href="maps/mapbox.css"/>
+    <script type="module" defer="defer" src="maps/mapbox.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+
+<!--    NEAREST PLACES-->
+    <link rel="stylesheet" href="nearest-places/nearest-places.css"/>
+    <script type="module" defer="defer" src="nearest-places/nearest_places.js"></script>
+
+<!--    PLACE IMAGE-->
+    <link rel="stylesheet" href="place-image/place-image.css"/>
+    <script type="module" defer="defer" src="place-image/place_image.js"></script>
+
+<!--    SEARCH-->
+    <link rel="stylesheet" href="search/search.css"/>
+    <script type="module" defer="defer" src="search/search.js"></script>
+
+<!--    FOUND PLACES LIST-->
+    <script type="module" defer="defer" src="found-places-list/found_places_list.js"></script>
+    <link rel="stylesheet" href="found-places-list/found-places-list.css"/>
+
+<!--    WEATHER-->
+    <script type="module" defer="defer" src="weather/weather.js"></script>
+    <link rel="stylesheet" href="weather/weather.css"/>
+</head>
+
+<body>
+    <div class="title-div">
+        <h1 class="places-header">
+            Places
+        </h1>
+    </div>
+
+    <div class="search-div">
+        <label class="search-label" for="place-search">
+            Enter place that you are interested in:
+        </label>
+        <input
+                class="search-input"
+                type="text"
+                id="place-search"
+                name="place-search"
+                placeholder=""
+        >
+        <input
+                class="search-button"
+                type="button"
+                value="Search"
+                name="search-button"
+                id="search-button"
+        >
+    </div>
+    <form class="found-places-form">
+        <nav class="found-places-nav">
+            <ul class="interesting-places-ul" id="interesting-places-ul"></ul>
+        </nav>
+        <footer></footer>
+    </form>
+    <div id="map" class="map"></div>
+    <div id="weather-div" class="weather-div">
+        <div class="weather-weather-div">
+            <label class="weather-weather-main-label" id="weather-weather-main-label"></label>
+            <label class="weather-weather-description-label" id="weather-weather-description-label"></label>
+        </div>
+        <div class="weather-main-div">
+            <label class="weather-main-temp-label" id="weather-main-temp-label"></label>
+            <label class="weather-main-feels-like-label" id="weather-main-feels-like-label"></label>
+            <label class="weather-main-pressure-label" id="weather-main-pressure-label"></label>
+            <label class="weather-main-humidity-label" id="weather-main-humidity-label"></label>
+            <label class="weather-main-temp-min-label" id="weather-main-temp-min-label"></label>
+            <label class="weather-main-temp-max-label" id="weather-main-temp-max-label"></label>
+            <label class="weather-main-sea-level-label" id="weather-main-sea-level-label"></label>
+            <label class="weather-main-grnd-level-label" id="weather-main-grnd-level-label"></label>
+        </div>
+        <label class="weather-visibility-label" id="weather-visibility-label"></label>
+        <div>
+            <label class="weather-wind-speed-label" id="weather-wind-speed-label"></label>
+            <label class="weather-wind-deg-label" id="weather-wind-deg-label"></label>
+            <label class="weather-wind-gust-label" id="weather-wind-gust-label"></label>
+        </div>
+        <label class="weather-clouds-label" id="weather-clouds-label"></label>
+        <div>
+            <label class="weather-rain-1h-label" id="weather-rain-1h-label"></label>
+            <label class="weather-rain-3h-label" id="weather-rain-3h-label"></label>
+        </div>
+        <div>
+            <label class="weather-snow-1h-label" id="weather-snow-1h-label"></label>
+            <label class="weather-snow-3h-label" id="weather-snow-3h-label"></label>
+        </div>
+        <div>
+            <label class="weather-time-dt-label" id="weather-time-dt-label"></label>
+            <label class="weather-time-timezone-label" id="weather-time-timezone-label"></label>
+            <label class="weather-time-sunrise-label" id="weather-time-sunrise-label"></label>
+            <label class="weather-time-sunset-label" id="weather-time-sunset-label"></label>
+        </div>
+        <div>
+            <label class="weather-location-country-label" id="weather-location-country-label"></label>
+            <label class="weather-location-city-label" id="weather-location-city-label"></label>
+        </div>
+        <div class="weather-image-div" id="weather-image-div"></div>
+    </div>
+    <div id="nearest-places-div" class="nearest-places-div">
+        <nav class="nearest-places-nav">
+            <ul class="nearest-places-ul" id="nearest-places-ul"></ul>
+        </nav>
+        <footer></footer>
+    </div>
+    <div id="place-image-div" class="place-image-div"></div>
+    <div id="place-description-div" class="place-description-div">
+        <label id="place-description-name-label" class="place-description-name-label"></label>
+        <label id="place-description-description-label" class="place-description-description-label"></label>
+        <label id="place-description-kinds-label" class="place-description-kinds-label"></label>
+    </div>
+    <div>
+        <a target="_blank" href="https://icons8.com/icon/YyEbAVyRYrMX/location">Location</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+    </div>
+</body>
+
+</html>
