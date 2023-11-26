@@ -1,3 +1,9 @@
-
+.place-description-div label {
+  background: var(--coral);
+  color: white;
+  font-family: "Noto Sans Gothic", sans-serif;
+  margin: 6rem;
+  font-size: 24px;
+}
 
 /*# sourceMappingURL=nearest-places.css.map */
