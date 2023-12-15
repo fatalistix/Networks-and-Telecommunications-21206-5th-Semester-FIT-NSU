@@ -9,4 +9,6 @@ interface SuspendMessageEnd {
     suspend fun writeJoin(msgJoin: MsgJoin)
     suspend fun writeRoleChange(msgRoleChange: MsgRoleChange)
     suspend fun writeError(msgError: MsgError)
+    suspend fun writeAck(msgAck: MsgAck)
+    suspend fun writeState(msgState: MsgState)
 }
