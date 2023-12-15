@@ -1,10 +1,8 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
+import ru.nsu.vbalashov2.onlinesnake.dto.GameConfig
 import ru.nsu.vbalashov2.onlinesnake.ui.*
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.GameConfig
 import java.awt.Color
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
 import java.awt.GridLayout
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -61,22 +59,6 @@ class GameConfigPanel : JPanel() {
         this.add(foodStaticTextField)
         this.add(stateDelayMsTextField)
     }
-
-//    init {
-//        this.widthTextField.addKeyListener(object : KeyAdapter() {
-//            override fun keyReleased(e: KeyEvent?) {
-//                super.keyTyped(e)
-//                val text = widthTextField.text
-//                if (text.toIntOrNull() == null) {
-//                    println("NOT NUMBER")
-//                } else {
-//                    println("NUMBER")
-//                }
-//                println(text)
-//                println(e!!.keyChar)
-//            }
-//        })
-//    }
 
     init {
         this.widthTextField.addKeyListener(TextFieldKeyAdapter(
