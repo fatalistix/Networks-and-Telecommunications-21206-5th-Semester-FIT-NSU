@@ -29,6 +29,9 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.20'
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
+
+    implementation 'io.arrow-kt:arrow-core:1.2.0'
+    implementation 'io.arrow-kt:arrow-fx-coroutines:1.2.0'
 }
 
 test {
