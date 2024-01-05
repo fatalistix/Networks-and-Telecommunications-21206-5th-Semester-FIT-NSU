@@ -1,17 +1,24 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
+import arrow.core.sort
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.Player
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.GridLayout
 import java.awt.Insets
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import javax.swing.JViewport
 
 class RatingPanel : JPanel() {
-    private val ratingLabel = JLabel("Rating")
-    private val ratingScrollPane = JScrollPane()
-
     private val gridBagInsets = Insets(2, 2, 2, 2)
+    private val ratingLabel = JLabel("Rating")
+    private val contentPanel = JPanel()
+    init {
+        contentPanel.layout = GridLayout(0, 1)
+    }
+    private val ratingScrollPane = JScrollPane(contentPanel)
 
     init {
         ratingLabel.horizontalAlignment = JLabel.CENTER
@@ -47,5 +54,18 @@ class RatingPanel : JPanel() {
         gbcRatingScrollPane.weighty = 95.0
         gbcRatingScrollPane.insets = gridBagInsets
         this.add(ratingScrollPane, gbcRatingScrollPane)
+    }
+
+    fun updateRatings(playersList: List<Player>) {
+        contentPanel.removeAll()
+        val sortedPlayersList = playersList.sortedByDescending { it.score }
+        for (player in sortedPlayersList) {
+            val playerLabel = JLabel("${player.name}: ${player.score}" +
+                    if (player.isMe) { " <- You" } else { "" } +
+                    if (player.isMaster) { " <- Master" } else ""
+            )
+            contentPanel.add(playerLabel)
+        }
+        revalidate()
     }
 }
