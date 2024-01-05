@@ -1,11 +1,10 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.dto
 
-data class AvailableGameInfo(
+import ru.nsu.vbalashov2.onlinesnake.dto.GameConfig
+
+data class AvailableGameDto(
     val gameName: String,
     val numOfPlayers: Int,
-    val width: Int,
-    val height: Int,
-    val foodStatic: Int,
-    val stateDelayMs: Int,
+    val gameConfig: GameConfig,
     val canJoin: Boolean,
 )
