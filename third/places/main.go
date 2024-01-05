@@ -35,7 +35,7 @@ func main() {
 	t := opentripmap.NewOpenTripMap("your-key")
 	w := openweather.NewOpenWeather("your-key")
 	placer := search.NewPlacer(g, w, t)
-	domainName := "nsu-places.ddns.net"
+	domainName := "your-dns"
 	addons, err := getSiteFiles()
 	if err != nil {
 		log.Fatal(err)
