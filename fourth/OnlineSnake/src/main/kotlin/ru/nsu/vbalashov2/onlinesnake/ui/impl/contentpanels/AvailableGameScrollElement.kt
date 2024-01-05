@@ -1,7 +1,7 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
 import ru.nsu.vbalashov2.onlinesnake.ui.AvailableGameSelectedListener
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameInfo
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameDto
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
@@ -10,20 +10,23 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 class AvailableGameScrollElement(
-    availableGameInfo: AvailableGameInfo,
-    private val selectedListener: AvailableGameSelectedListener
+    availableGameDto: AvailableGameDto,
+    private val selectedListener: AvailableGameSelectedListener,
+    private val nicknameAndServerNameProperties: NicknameAndServerNameProperties,
 ) : JPanel() {
-    private val gridBagInsets = Insets(2, 2, 2, 2)
-    private val gameNameLabel = JLabel(availableGameInfo.gameName)
-    private val numOfPlayers = JLabel(availableGameInfo.numOfPlayers.toString())
-    private val gameFieldInfoLabel = JLabel(if (availableGameInfo.canJoin) "can join to " else "cannot join to " +
-            "${availableGameInfo.foodStatic} food on ${availableGameInfo.height}x${availableGameInfo.width} " +
-            "with ${availableGameInfo.stateDelayMs}MS")
+    private val gameNameLabel = JLabel(availableGameDto.gameName)
+    private val numOfPlayers = JLabel(availableGameDto.numOfPlayers.toString())
+    private val gameFieldInfoLabel = JLabel(
+        (if (availableGameDto.canJoin) "can join to " else "cannot join to ") +
+                "${availableGameDto.gameConfig.foodStatic} food on " +
+                "${availableGameDto.gameConfig.height}x" +
+                "${availableGameDto.gameConfig.width} " +
+                "with ${availableGameDto.gameConfig.stateDelayMs}MS")
     private val joinButton = JButton(">>")
 
     init {
         joinButton.addActionListener {
-            selectedListener.onSelected()
+            selectedListener.onSelected(nicknameAndServerNameProperties.nickname)
         }
     }
 
@@ -41,7 +44,6 @@ class AvailableGameScrollElement(
         gbcGameNameLabel.anchor = GridBagConstraints.NORTHWEST
         gbcGameNameLabel.weightx = 30.0
         gbcGameNameLabel.weighty = 100.0
-        gbcGameNameLabel.insets = gridBagInsets
         this.add(gameNameLabel, gbcGameNameLabel)
     }
 
@@ -55,7 +57,6 @@ class AvailableGameScrollElement(
         gbcNumOfPlayersLabel.anchor = GridBagConstraints.NORTHWEST
         gbcNumOfPlayersLabel.weightx = 5.0
         gbcNumOfPlayersLabel.weighty = 100.0
-        gbcNumOfPlayersLabel.insets = gridBagInsets
         this.add(numOfPlayers, gbcNumOfPlayersLabel)
     }
 
@@ -69,13 +70,12 @@ class AvailableGameScrollElement(
         gbcGameFieldInfoLabel.anchor = GridBagConstraints.NORTHWEST
         gbcGameFieldInfoLabel.weightx = 55.0
         gbcGameFieldInfoLabel.weighty = 100.0
-        gbcGameFieldInfoLabel.insets = gridBagInsets
         this.add(gameFieldInfoLabel, gbcGameFieldInfoLabel)
     }
 
     init {
         val gbcJoinButton = GridBagConstraints()
-        gbcJoinButton.gridx = 2
+        gbcJoinButton.gridx = 3
         gbcJoinButton.gridy = 0
         gbcJoinButton.gridwidth = 1
         gbcJoinButton.gridheight = 1
@@ -83,15 +83,18 @@ class AvailableGameScrollElement(
         gbcJoinButton.anchor = GridBagConstraints.NORTHWEST
         gbcJoinButton.weightx = 10.0
         gbcJoinButton.weighty = 100.0
-        gbcJoinButton.insets = gridBagInsets
         this.add(joinButton, gbcJoinButton)
     }
 
-    fun upadateInfo(availableGameInfo: AvailableGameInfo) {
-        gameNameLabel.text = availableGameInfo.gameName
-        numOfPlayers.text = availableGameInfo.numOfPlayers.toString()
-        gameFieldInfoLabel.text = if (availableGameInfo.canJoin) "can join to " else "cannot join to " +
-                "${availableGameInfo.foodStatic} food on ${availableGameInfo.height}x${availableGameInfo.width} " +
-                "with ${availableGameInfo.stateDelayMs}MS"
+    fun updateInfo(availableGameDto: AvailableGameDto) {
+        gameNameLabel.text = availableGameDto.gameName
+        numOfPlayers.text = availableGameDto.numOfPlayers.toString()
+        gameFieldInfoLabel.text =
+            (if (availableGameDto.canJoin) "can join to " else "cannot join to ") +
+                "${availableGameDto.gameName} with" +
+                "${availableGameDto.gameConfig.foodStatic} food on " +
+                "${availableGameDto.gameConfig.height}x" +
+                "${availableGameDto.gameConfig.width} " +
+                "with ${availableGameDto.gameConfig.stateDelayMs}MS"
     }
 }
