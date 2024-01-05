@@ -1,23 +1,32 @@
 package ru.nsu.vbalashov2.onlinesnake.net.impl
 
+import ru.nsu.vbalashov2.onlinesnake.dto.GameConfig
+import ru.nsu.vbalashov2.onlinesnake.dto.Snake
+import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
 import ru.nsu.vbalashov2.onlinesnake.net.RawMessage
 import ru.nsu.vbalashov2.onlinesnake.net.dto.*
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.*
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.Player
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.Direction as ProtobufDirection
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.Direction as NetDirection
+import ru.nsu.vbalashov2.onlinesnake.dto.Direction as NetDirection
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.GameState.Snake.SnakeState as ProtobufSnakeState
-import ru.nsu.vbalashov2.onlinesnake.net.dto.SnakeState as NetSnakeState
+import ru.nsu.vbalashov2.onlinesnake.dto.SnakeState as NetSnakeState
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.NodeRole as ProtobufNodeRole
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.NodeRole as NetNodeRole
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.GamePlayer as ProtobufPlayer
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.Player as NetPlayer
 import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.PlayerType as ProtobufPlayerType
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.PlayerType as NetPlayerType
+import ru.nsu.vbalashov2.onlinesnake.dto.Coord as NetCoord
 
-class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, private val sourceHost: SourceHost) : RawMessage {
-    private val gameMessageInfo = GameMessageInfo(
+class ProtobufRawMessage(
+    bytes: ByteArray,
+    override val sourceHost: SourceHost
+) : RawMessage {
+    private val gameMessage = OnlineSnakeProto.GameMessage.parseFrom(bytes)
+
+    override val gameMessageInfo = GameMessageInfo(
         gameMessage.msgSeq,
         gameMessage.senderId,
         gameMessage.receiverId,
@@ -25,29 +34,28 @@ class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, 
         gameMessage.hasReceiverId()
     )
 
-    override fun getType(): MessageType {
-        if (gameMessage.hasPing()) {
-            return MessageType.PING
+    override val type: MessageType
+        get() = if (gameMessage.hasPing()) {
+            MessageType.PING
         } else if (gameMessage.hasSteer()) {
-            return MessageType.STEER
+            MessageType.STEER
         } else if (gameMessage.hasAck() && gameMessage.hasSenderId() && gameMessage.hasReceiverId()) {
-            return MessageType.ACK
+            MessageType.ACK
         } else if (gameMessage.hasState()) {
-            return MessageType.STATE
+            MessageType.STATE
         } else if (gameMessage.hasAnnouncement()) {
-            return MessageType.ANNOUNCEMENT
+            MessageType.ANNOUNCEMENT
         } else if (gameMessage.hasJoin()) {
-            return MessageType.JOIN
+            MessageType.JOIN
         } else if (gameMessage.hasError()) {
-            return MessageType.ERROR
+            MessageType.ERROR
         } else if (gameMessage.hasRoleChange() && gameMessage.hasSenderId() && gameMessage.hasReceiverId()) {
-            return MessageType.ROLE_CHANGE
+            MessageType.ROLE_CHANGE
         } else if (gameMessage.hasDiscover()) {
-            return MessageType.DISCOVER
+            MessageType.DISCOVER
         } else {
-            return MessageType.UNKNOWN
+            MessageType.UNKNOWN
         }
-    }
 
     override fun getAsPing(): MsgPing {
         return MsgPing(
@@ -73,12 +81,12 @@ class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, 
     }
 
     override fun getAsState(): MsgState {
-        val state = gameMessage.state.state
+        val state: OnlineSnakeProto.GameState = gameMessage.state.state
         val snakeList = state.snakesList.map {
             Snake(
                 playerID = it.playerId,
                 pointList = it.pointsList.map { protoCoord ->
-                    Coord(
+                    NetCoord(
                         x = if (protoCoord.hasX()) protoCoord.x else 0,
                         y = if (protoCoord.hasY()) protoCoord.y else 0,
                     )
@@ -88,7 +96,7 @@ class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, 
             )
         }
         val foodList = state.foodsList.map {
-            Coord(it.x, it.y)
+            NetCoord(it.x, it.y)
         }
         return MsgState(
             sourceHost,
@@ -156,7 +164,6 @@ class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, 
     }
 
     override fun getAsDiscover(): MsgDiscover {
-        val discover = gameMessage.discover
         return MsgDiscover(
             sourceHost = sourceHost,
             gameMessageInfo = gameMessageInfo,
@@ -201,6 +208,7 @@ class ProtobufRawMessage(private val gameMessage: OnlineSnakeProto.GameMessage, 
                 nodeRole = protobufNodeRoleToNetNodeRole(it.role),
                 score = it.score,
                 name = it.name,
+                playerType = protobufPlayerTypeToNetPlayerType(it.type)
             )
         }
     }
