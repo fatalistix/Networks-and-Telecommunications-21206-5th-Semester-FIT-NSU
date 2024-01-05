@@ -1,81 +1,53 @@
 package ru.nsu.vbalashov2.onlinesnake.controller
 
+import arrow.atomic.update
 import kotlinx.coroutines.*
-import ru.nsu.vbalashov2.onlinesnake.model.SnakeGame
-import ru.nsu.vbalashov2.onlinesnake.model.SnakeKey
-import ru.nsu.vbalashov2.onlinesnake.net.RawMessage
-import ru.nsu.vbalashov2.onlinesnake.net.SuspendMessageEnd
-import ru.nsu.vbalashov2.onlinesnake.net.SuspendMessageSource
-import ru.nsu.vbalashov2.onlinesnake.net.dto.MessageType
-import ru.nsu.vbalashov2.onlinesnake.net.dto.MsgAnnouncement
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.GameAnnouncement
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.GameMessageInfo
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.Player
+import ru.nsu.vbalashov2.onlinesnake.controller.gamestate.GameExiter
+import ru.nsu.vbalashov2.onlinesnake.controller.gamestate.Session
+import ru.nsu.vbalashov2.onlinesnake.dto.Direction
+import ru.nsu.vbalashov2.onlinesnake.dto.GameConfig
+import ru.nsu.vbalashov2.onlinesnake.net.*
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
-import ru.nsu.vbalashov2.onlinesnake.net.impl.ProtobufUDPSuspendMessageSourceEnd
-import ru.nsu.vbalashov2.onlinesnake.proto.OnlineSnakeProto.GameMessage.AnnouncementMsg
+import ru.nsu.vbalashov2.onlinesnake.net.impl.ProtobufJavaMulticastUDPSuspendMessageSenderReader
+import ru.nsu.vbalashov2.onlinesnake.net.impl.ProtobufKtorUDPSuspendMessageSenderReader
+import ru.nsu.vbalashov2.onlinesnake.net.impl.ProtobufSuspendMessageSerializerDeserializer
 import ru.nsu.vbalashov2.onlinesnake.ui.ExitListener
 import ru.nsu.vbalashov2.onlinesnake.ui.GameUI
+import ru.nsu.vbalashov2.onlinesnake.ui.NewDirectionListener
 import ru.nsu.vbalashov2.onlinesnake.ui.NewGameListener
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameInfo
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.KeyPoint
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameDto
 import ru.nsu.vbalashov2.onlinesnake.ui.impl.GameFrame
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.GameConfig as UIGameConfig
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.GameConfig as NetGameConfig
+import java.util.concurrent.atomic.AtomicReference
 
-
-class Controller : NewGameListener, ExitListener {
+class Controller : NewGameListener, ExitListener, NewDirectionListener, GameJoiner, GameAnnouncer, GameExiter {
     private val gameUI: GameUI = GameFrame()
-    private var game: SnakeGame? = null
-    private val swingKeyboardDirectionSourceCreator = SwingKeyboardDirectionSourceCreator()
-
     private val multicastIP = "239.192.0.4"
+//    private val multicastIP = "224.0.0.5"
     private val multicastPort = 9192
-    private val multicastMessageSource: SuspendMessageSource = ProtobufUDPSuspendMessageSourceEnd(multicastIP, multicastPort)
-    private val regularMessageSource: SuspendMessageSource
-    private val regularMessageEnd: SuspendMessageEnd
+    private val messageSerializer: SuspendMessageSerializer
+    private val messageDeserializer: SuspendMessageDeserializer
+    private val multicastMessageReader: SuspendMessageReader
+    private val regularMessageReader: SuspendMessageReader
+    private val regularMessageSender: SuspendMessageSender
 
     private val ioCoroutineScope = CoroutineScope(Dispatchers.IO)
     private val defaultCoroutineScope = CoroutineScope(Dispatchers.Default)
-    private val availableGames: MutableMap<String, GameAnnouncement> = mutableMapOf()
 
-    private var announcementJob: Job? = null
-    private val multicastListeningJob = ioCoroutineScope.launch {
-        while (true) {
-            val rawMessage = multicastMessageSource.readSuspend()
-            when (rawMessage.getType()) {
-                MessageType.ANNOUNCEMENT -> {
-                    val msgAnnouncement = rawMessage.getAsAnnouncement()
-                    msgAnnouncement.gameAnnouncementList.forEach { gameAnnouncement ->
-                        gameUI.addAvailableGame(
-                            AvailableGameInfo(
-                                gameName = gameAnnouncement.gameName,
-                                numOfPlayers = gameAnnouncement.playerList.size,
-                                width = gameAnnouncement.gameConfig.width,
-                                height = gameAnnouncement.gameConfig.height,
-                                foodStatic = gameAnnouncement.gameConfig.foodStatic,
-                                stateDelayMs = gameAnnouncement.gameConfig.stateDelayMs,
-                                canJoin = gameAnnouncement.canJoin,
-                            )
-                        ) {
-                            println("I've selected game")
-                        }
-                    }
-                }
-                MessageType.DISCOVER -> {
-
-                }
-                else -> {
-
-                }
-            }
-        }
+    init {
+        val senderReader = ProtobufKtorUDPSuspendMessageSenderReader()
+        regularMessageReader = senderReader
+        regularMessageSender = senderReader
     }
 
     init {
-        val sourceEnd = ProtobufUDPSuspendMessageSourceEnd()
-        regularMessageSource = sourceEnd
-        regularMessageEnd = sourceEnd
+        val serializerDeserializer = ProtobufSuspendMessageSerializerDeserializer()
+        messageSerializer = serializerDeserializer
+        messageDeserializer = serializerDeserializer
+    }
+
+    init {
+        val senderReader = ProtobufJavaMulticastUDPSuspendMessageSenderReader(multicastIP, multicastPort)
+        multicastMessageReader = senderReader
     }
 
     init {
@@ -98,82 +70,111 @@ class Controller : NewGameListener, ExitListener {
         }
     }
 
+    init {
+        gameUI.addNewDirectionListener(this)
+    }
 
-    override fun newGame(uiGameConfig: UIGameConfig) {
+    private val availableGamesServer = AvailableGamesServer(
+        messagesReader = multicastMessageReader,
+        messagesDeserializer = messageDeserializer,
+        gameUI = gameUI,
+        ioCoroutineScope = ioCoroutineScope,
+        gameJoiner = this,
+        gameAnnouncer = this,
+    )
+
+    private val atomicSession = AtomicReference<Session?>(null)
+
+    override fun newDirection(direction: Direction) {
         defaultCoroutineScope.launch {
-            Server(
-                messageSource = regularMessageSource,
-                messageEnd = regularMessageEnd,
-                gameConfig = NetGameConfig(
-                    width = uiGameConfig.width,
-                    height = uiGameConfig.height,
-                    foodStatic = uiGameConfig.foodStatic,
-                    stateDelayMs = uiGameConfig.stateDelayMs,
-                ),
-                gameUI = gameUI,
-                coroutineScope = ioCoroutineScope,
-                multicastIP = multicastIP,
-                multicastPort = multicastPort,
-                gameName = "SOME NAME"
-            )
+            println(atomicSession.get())
+            atomicSession.get()?.newDirection(direction)
         }
-//        exit()
-//        game = SnakeGame(
-//            width = uiGameConfig.width,
-//            height = uiGameConfig.height,
-//            foodStatic = uiGameConfig.foodStatic,
-//            stateDelayMs = uiGameConfig.stateDelayMs,
-//            onFieldUpdate = { snakes, food ->
-//                gameUI.updateField(
-//                    snakes.map { list ->
-//                        list.map { KeyPoint(it.x, it.y) }
-//                               },
-//                    food.map { KeyPoint(it.x, it.y) },
-//                    uiGameConfig.width,
-//                    uiGameConfig.height,
-//                )
-//            }
-//        )
-//        game?.createSnake(swingKeyboardDirectionSourceCreator)
-//        this.announcementJob = ioCoroutineScope.launch {
-//            val msgAnnouncement = MsgAnnouncement(
-//                sourceHost = SourceHost(multicastIP, multicastPort),
-//                gameMessageInfo = GameMessageInfo(
-//                    msgSeq = 0,
-//                    senderID = 0,
-//                    receiverID = 0,
-//                    hasSenderID = false,
-//                    hasReceiverId = false,
-//                ),
-//                listOf(GameAnnouncement(
-//                    playerList = listOf(),
-//                    gameConfig = NetGameConfig(
-//                        width = uiGameConfig.width,
-//                        height = uiGameConfig.height,
-//                        foodStatic = uiGameConfig.foodStatic,
-//                        stateDelayMs = uiGameConfig.stateDelayMs,
-//                    ),
-//                    canJoin = true,
-//                    gameName = "something from xf",
-//                )),
-//            )
-//            while (true) {
-//                regularMessageEnd.writeAnnouncement(msgAnnouncement = msgAnnouncement)
-//                delay(1000)
-//            }
-//        }
     }
 
     override fun exit() {
-        if (game == null) {
-            return
+        defaultCoroutineScope.launch {
+            atomicSession.update {
+                it?.cancel()
+                null
+            }
         }
-        game?.close()
-        game = null
-        announcementJob?.cancel()
     }
 
     fun start() {
         gameUI.start()
+    }
+
+    override fun newGame(gameConfig: GameConfig, gameName: String, playerName: String) {
+        defaultCoroutineScope.launch {
+            atomicSession.update {
+                it?.cancel()
+                Session(
+                    messageSerializer,
+                    messageDeserializer,
+                    regularMessageSender,
+                    regularMessageReader,
+                    ioCoroutineScope,
+                    defaultCoroutineScope,
+                    gameUI,
+                    gameConfig,
+                    playerName,
+                    gameName,
+                    "",
+                    0,
+                    multicastIP,
+                    multicastPort,
+                    startServer = true,
+                ) {
+                    println("WHEN I AM NULL>............................................")
+                    atomicSession.update { session ->
+                        session?.cancel()
+                        null
+                    }
+                }
+            }
+        }
+    }
+
+    override fun announce() {
+        defaultCoroutineScope.launch {
+            atomicSession.get()?.announce(SourceHost(multicastIP, multicastPort))
+        }
+    }
+
+    override fun joinGame(availableGameDto: AvailableGameDto, playerName: String, masterSourceHost: SourceHost) {
+        defaultCoroutineScope.launch {
+            atomicSession.update {
+                it?.cancel()
+                Session(
+                    messageSerializer,
+                    messageDeserializer,
+                    regularMessageSender,
+                    regularMessageReader,
+                    ioCoroutineScope,
+                    defaultCoroutineScope,
+                    gameUI,
+                    availableGameDto.gameConfig,
+                    playerName,
+                    availableGameDto.gameName,
+                    masterSourceHost.ip,
+                    masterSourceHost.port,
+                    multicastIP,
+                    multicastPort,
+                    startServer = false,
+                    sessionGameExiter = this@Controller,
+                )
+            }
+        }
+    }
+
+    override suspend fun exitGame() {
+        println("WHEN I AM NULL>............................................")
+        atomicSession.update {
+            defaultCoroutineScope.async {
+                it?.cancel()
+            }
+            null
+        }
     }
 }
