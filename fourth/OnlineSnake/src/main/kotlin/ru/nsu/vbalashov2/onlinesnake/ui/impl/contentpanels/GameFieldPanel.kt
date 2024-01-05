@@ -13,11 +13,10 @@ class GameFieldPanel : JPanel() {
     private var fieldWidth: Int = 1
     private var fieldHeight: Int = 1
     private var myID: Int = 0
-//    private val snakeColors = arrayListOf(Color.BLACK, Color.BLUE, Color.CYAN, Color.RED, Color.ORANGE, Color.YELLOW, Color.MAGENTA, Color.PINK, Color.LIGHT_GRAY)
-    private val foodColor = Color.GREEN
-    private val myColor = Color.YELLOW
-    private val aliveEnemyColor = Color.RED
-    private val zombieEnemyColor = Color.DARK_GRAY
+    private val foodColor = Color(50, 180, 40)
+    private val myColor = Color(50, 90, 200)
+    private val aliveEnemyColor = Color(190, 50, 30)
+    private val zombieEnemyColor = Color(130, 130, 130)
     private var snakesList: List<Snake> = listOf()
     private var foodList: List<Coord> = listOf()
 
@@ -43,6 +42,25 @@ class GameFieldPanel : JPanel() {
         val brickHeightInt = brickHeight.roundToInt()
         g?.color = Color.WHITE
         g?.fillRect(offset.width, offset.height, fieldSizeDimension.width, fieldSizeDimension.height)
+
+        g?.color = Color(40, 40, 40)
+        for (i in 1..<fieldHeight) {
+            g?.drawLine(
+                offset.width,
+                (offset.height + i * brickHeight).roundToInt(),
+                this.width - offset.width,
+                (offset.height + i * brickHeight).roundToInt(),
+            )
+        }
+
+        for (i in 1..<fieldWidth) {
+            g?.drawLine(
+                (offset.width + i * brickWidth).roundToInt(),
+                offset.height,
+                (offset.width + i * brickWidth).roundToInt(),
+                this.height - offset.height,
+            )
+        }
 
         g?.color = foodColor
 //        println("<==>")
