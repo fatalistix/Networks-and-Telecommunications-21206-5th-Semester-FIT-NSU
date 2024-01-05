@@ -7,4 +7,5 @@ data class Player(
     val nodeRole: NodeRole,
     val score: Int,
     val hasSourceHost: Boolean,
+    val playerType: PlayerType,
 )
