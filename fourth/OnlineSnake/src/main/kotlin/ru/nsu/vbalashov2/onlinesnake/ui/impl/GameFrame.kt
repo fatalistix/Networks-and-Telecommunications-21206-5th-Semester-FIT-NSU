@@ -12,6 +12,7 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import java.util.concurrent.FutureTask
 import javax.swing.JFrame
+import javax.swing.JOptionPane
 import javax.swing.SwingUtilities
 
 class GameFrame : JFrame(), GameUI {
@@ -126,5 +127,9 @@ class GameFrame : JFrame(), GameUI {
         SwingUtilities.invokeLater {
             this.newDirectionListenersList += listener
         }
+    }
+
+    override fun showError(title: String, message: String) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE)
     }
 }
