@@ -1,4 +1,4 @@
-package ru.nsu.vbalashov2.onlinesnake.net.dto.common
+package ru.nsu.vbalashov2.onlinesnake.dto
 
 data class SourceHost(
     val ip: String,
