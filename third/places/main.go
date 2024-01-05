@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"places/filescanner"
@@ -11,6 +10,8 @@ import (
 	"places/search/graphhopper"
 	"places/search/opentripmap"
 	"places/search/openweather"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func getSiteFiles() ([]string, error) {
@@ -30,9 +31,9 @@ func getSiteFiles() ([]string, error) {
 }
 
 func main() {
-	g := graphhopper.NewGraphHopper("269bd77f-9cef-4491-9db7-7736da916f00")
-	t := opentripmap.NewOpenTripMap("5ae2e3f221c38a28845f05b60988d8d67eb0469edbcdfcf2bc1b8ff2")
-	w := openweather.NewOpenWeather("fa325a4c8f9c6731c20ae49d32c9e075")
+	g := graphhopper.NewGraphHopper("your-key")
+	t := opentripmap.NewOpenTripMap("your-key")
+	w := openweather.NewOpenWeather("your-key")
 	placer := search.NewPlacer(g, w, t)
 	domainName := "nsu-places.ddns.net"
 	addons, err := getSiteFiles()
@@ -58,7 +59,4 @@ func main() {
 		TLSConfig: m.TLSConfig(),
 	}
 	log.Fatal(s.ListenAndServeTLS("", ""))
-
-	//log.Fatal(http.Serve(autocert.NewListener(domainName), nil))
-	//log.Fatal(http.ListenAndServe(":8069", nil))
 }
