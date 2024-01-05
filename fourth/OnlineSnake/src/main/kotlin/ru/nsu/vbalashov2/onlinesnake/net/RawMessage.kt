@@ -1,9 +1,13 @@
 package ru.nsu.vbalashov2.onlinesnake.net
 
 import ru.nsu.vbalashov2.onlinesnake.net.dto.*
+import ru.nsu.vbalashov2.onlinesnake.net.dto.common.GameMessageInfo
+import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
 
 interface RawMessage {
-    fun getType(): MessageType
+    val type: MessageType
+    val sourceHost: SourceHost
+    val gameMessageInfo: GameMessageInfo
     fun getAsPing(): MsgPing
     fun getAsSteer(): MsgSteer
     fun getAsAck(): MsgAck
