@@ -7,4 +7,4 @@ fun main() =
     runBlocking {
         System.setProperty("sun.java2d.opengl", "true")
         Controller().start()
-}
+    }
