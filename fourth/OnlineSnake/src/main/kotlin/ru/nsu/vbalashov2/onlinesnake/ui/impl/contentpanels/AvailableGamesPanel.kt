@@ -1,20 +1,18 @@
 package ru.nsu.vbalashov2.onlinesnake.ui.impl.contentpanels
 
 import ru.nsu.vbalashov2.onlinesnake.ui.AvailableGameSelectedListener
-import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameInfo
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameDto
+import ru.nsu.vbalashov2.onlinesnake.ui.dto.AvailableGameKey
 import java.awt.GridLayout
-import java.awt.Insets
-import javax.swing.JButton
-import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 
-class AvailableGamesPanel : JPanel() {
+class AvailableGamesPanel(
+    private val nicknameAndServerNameProperties: NicknameAndServerNameProperties,
+) : JPanel() {
     private val availableScrollPane = JScrollPane()
     private val content = JPanel()
-    private val availableGameElementsList: MutableList<AvailableGameScrollElement> = mutableListOf()
+    private val availableGameElementsMap = mutableMapOf<AvailableGameKey, AvailableGameScrollElement>()
 
     init {
         this.layout = GridLayout(1, 1)
@@ -32,11 +30,32 @@ class AvailableGamesPanel : JPanel() {
     }
 
     fun addAvailableGame(
-        availableGameInfo: AvailableGameInfo,
+        availableGameDto: AvailableGameDto,
         availableGameSelectedListener: AvailableGameSelectedListener
-    ) : Int {
-        availableGameElementsList += AvailableGameScrollElement(availableGameInfo, availableGameSelectedListener)
-        return availableGameElementsList.size - 1
+    ) : AvailableGameKey {
+        val key = AvailableGameKey()
+        val available = AvailableGameScrollElement(
+            availableGameDto,
+            availableGameSelectedListener,
+            nicknameAndServerNameProperties
+        )
+        availableGameElementsMap[key] = available
+        content.add(available)
+        revalidate()
+        return key
+    }
+
+    fun removeAvailableGame(key: AvailableGameKey) {
+        val available = availableGameElementsMap.remove(key)
+        if (available != null) {
+            content.remove(available)
+            revalidate()
+        }
+    }
+
+    fun updateAvailableGame(info: AvailableGameDto, key: AvailableGameKey) {
+        availableGameElementsMap[key]?.updateInfo(info)
+        revalidate()
     }
 }
 
