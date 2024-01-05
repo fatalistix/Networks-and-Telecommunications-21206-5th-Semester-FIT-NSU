@@ -1,6 +1,6 @@
 package ru.nsu.vbalashov2.onlinesnake.net.dto
 
-import ru.nsu.vbalashov2.onlinesnake.net.dto.common.Direction
+import ru.nsu.vbalashov2.onlinesnake.dto.Direction
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.GameMessageInfo
 import ru.nsu.vbalashov2.onlinesnake.net.dto.common.SourceHost
 
