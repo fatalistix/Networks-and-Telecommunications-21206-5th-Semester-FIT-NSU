@@ -1,4 +1,4 @@
-package ru.nsu.vbalashov2.onlinesnake.controller.oldproxy
+package ru.nsu.vbalashov2.onlinesnake.controller.proxy
 
 data class ProxyEvent(
     val type: ProxyEventType,
